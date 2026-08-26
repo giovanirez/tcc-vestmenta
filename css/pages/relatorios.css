@@ -1,0 +1,12 @@
+/* ============ Relatórios ============ */
+.filter-bar { display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
+
+.progress-bar-container {
+    width: 100%;
+    background-color: var(--border-color);
+    border-radius: 4px;
+    height: 7px;
+    margin-top: 8px;
+    overflow: hidden;
+}
+.progress-bar { height: 100%; background-color: var(--thread); border-radius: 4px; }

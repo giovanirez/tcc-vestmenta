@@ -48,15 +48,15 @@ $produtos = [
             <tbody>
                 <?php foreach($produtos as $prod): ?>
                 <tr>
-                    <td>#<?= $prod['id'] ?></td>
+                    <td class="mono">#<?= $prod['id'] ?></td>
                     <td><?= $prod['nome'] ?></td>
                     <td><?= $prod['categoria'] ?></td>
                     <td><?= $prod['fornecedor'] ?></td>
-                    <td><?= $prod['estoque'] ?> un.</td>
-                    <td>R$ <?= number_format($prod['preco'], 2, ',', '.') ?></td>
+                    <td class="mono"><?= $prod['estoque'] ?> un.</td>
+                    <td class="mono">R$ <?= number_format($prod['preco'], 2, ',', '.') ?></td>
                     <td>
-                        <button class="btn-icon" style="color: var(--accent-color);"><i class="fa-solid fa-pen-to-square"></i></button>
-                        <button class="btn-icon" style="color: #e74c3c;"><i class="fa-solid fa-trash"></i></button>
+                        <button class="btn-icon btn-icon--edit"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button class="btn-icon btn-icon--delete"><i class="fa-solid fa-trash"></i></button>
                     </td>
                 </tr>
                 <?php endforeach; ?>

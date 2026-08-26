@@ -55,19 +55,19 @@ $clientes = [
             <tbody>
                 <?php foreach($clientes as $cli): ?>
                 <tr>
-                    <td>#<?= $cli['id'] ?></td>
+                    <td class="mono">#<?= $cli['id'] ?></td>
                     <td><strong><?= $cli['nome'] ?></strong></td>
-                    <td><?= $cli['cpf'] ?></td>
+                    <td class="mono"><?= $cli['cpf'] ?></td>
                     <td>
-                        <div><i class="fa-solid fa-mobile-screen" style="font-size: 0.8rem; color: var(--text-muted);"></i> <?= $cli['telefone'] ?></div>
+                        <div><i class="fa-solid fa-mobile-screen text-muted" style="font-size: 0.8rem;"></i> <?= $cli['telefone'] ?></div>
                         <?php if(!empty($cli['email'])): ?>
-                            <div><i class="fa-solid fa-envelope" style="font-size: 0.8rem; color: var(--text-muted);"></i> <?= $cli['email'] ?></div>
+                            <div><i class="fa-solid fa-envelope text-muted" style="font-size: 0.8rem;"></i> <?= $cli['email'] ?></div>
                         <?php endif; ?>
                     </td>
                     <td><small><?= $cli['endereco'] ?></small></td>
                     <td>
-                        <button class="btn-icon" title="Editar" style="color: var(--accent-color);"><i class="fa-solid fa-pen-to-square"></i></button>
-                        <button class="btn-icon" title="Ver Histórico" style="color: #2ecc71;"><i class="fa-solid fa-clock-rotate-left"></i></button>
+                        <button class="btn-icon btn-icon--edit" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button class="btn-icon btn-icon--view" title="Ver Histórico"><i class="fa-solid fa-clock-rotate-left"></i></button>
                     </td>
                 </tr>
                 <?php endforeach; ?>

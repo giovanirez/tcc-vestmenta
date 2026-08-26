@@ -55,17 +55,17 @@ $fornecedores = [
             <tbody>
                 <?php foreach($fornecedores as $forn): ?>
                 <tr>
-                    <td>#<?= $forn['id'] ?></td>
+                    <td class="mono">#<?= $forn['id'] ?></td>
                     <td><strong><?= $forn['nome'] ?></strong></td>
-                    <td><?= $forn['cnpj'] ?></td>
+                    <td class="mono"><?= $forn['cnpj'] ?></td>
                     <td>
-                        <div><i class="fa-solid fa-phone" style="font-size: 0.8rem; color: var(--text-muted);"></i> <?= $forn['telefone'] ?></div>
-                        <div><i class="fa-solid fa-envelope" style="font-size: 0.8rem; color: var(--text-muted);"></i> <?= $forn['email'] ?></div>
+                        <div><i class="fa-solid fa-phone text-muted" style="font-size: 0.8rem;"></i> <?= $forn['telefone'] ?></div>
+                        <div><i class="fa-solid fa-envelope text-muted" style="font-size: 0.8rem;"></i> <?= $forn['email'] ?></div>
                     </td>
                     <td><small><?= $forn['endereco'] ?></small></td>
                     <td>
-                        <button class="btn-icon" style="color: var(--accent-color);"><i class="fa-solid fa-pen-to-square"></i></button>
-                        <button class="btn-icon" style="color: #e74c3c;"><i class="fa-solid fa-trash"></i></button>
+                        <button class="btn-icon btn-icon--edit"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button class="btn-icon btn-icon--delete"><i class="fa-solid fa-trash"></i></button>
                     </td>
                 </tr>
                 <?php endforeach; ?>

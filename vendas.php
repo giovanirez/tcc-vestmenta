@@ -1,4 +1,4 @@
-<?php include 'includes/header.php'; ?>
+<?php $page_css = 'vendas.css'; include 'includes/header.php'; ?>
 
 <?php
 // Dados Mockados - Histórico de Vendas
@@ -9,11 +9,11 @@ $vendas = [
 ];
 ?>
 
-<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
-    
+<div class="pdv-layout">
+
     <div class="card">
         <h2><i class="fa-solid fa-cart-arrow-down"></i> Frente de Caixa (PDV)</h2>
-        
+
         <form action="#" method="POST" style="margin-top: 15px;">
             <div class="form-group">
                 <label>Cliente</label>
@@ -23,22 +23,22 @@ $vendas = [
                         <option>Mariana Oliveira</option>
                         <option>Carlos Mendes</option>
                     </select>
-                    <button type="button" class="btn-icon" title="Novo Cliente" style="background: var(--bg-color); padding: 0 15px; border-radius: 4px; border: 1px solid var(--border-color);"><i class="fa-solid fa-user-plus"></i></button>
+                    <button type="button" class="btn-icon" title="Novo Cliente" style="background: var(--paper); padding: 0 15px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);"><i class="fa-solid fa-user-plus"></i></button>
                 </div>
             </div>
 
-            <div style="background: var(--bg-color); padding: 15px; border-radius: 4px; margin-bottom: 15px; border: 1px dashed var(--border-color);">
+            <div class="pdv-scan">
                 <label style="display: block; margin-bottom: 10px; font-weight: 500;"><i class="fa-solid fa-barcode"></i> Lançar Produto</label>
                 <div style="display: flex; gap: 10px;">
                     <input type="text" class="form-control" placeholder="Código de barras ou nome do produto..." style="flex: 1;">
                     <input type="number" class="form-control" value="1" min="1" style="width: 80px;" title="Quantidade">
-                    <button type="button" class="btn" style="background-color: var(--primary-color);">Adicionar</button>
+                    <button type="button" class="btn" style="margin-top: 0;">Adicionar</button>
                 </div>
             </div>
 
-            <div class="table-responsive" style="margin-bottom: 20px;">
+            <div class="table-responsive" style="margin-bottom: 0;">
                 <table style="margin-top: 0;">
-                    <thead style="background: #eee;">
+                    <thead>
                         <tr>
                             <th>Produto</th>
                             <th>Qtd</th>
@@ -50,17 +50,17 @@ $vendas = [
                     <tbody>
                         <tr>
                             <td>Vestido Floral Verão</td>
-                            <td>1</td>
-                            <td>R$ 159,90</td>
-                            <td>R$ 159,90</td>
-                            <td style="text-align: right;"><button type="button" class="btn-icon" style="color: #e74c3c;"><i class="fa-solid fa-xmark"></i></button></td>
+                            <td class="mono">1</td>
+                            <td class="mono">R$ 159,90</td>
+                            <td class="mono">R$ 159,90</td>
+                            <td style="text-align: right;"><button type="button" class="btn-icon btn-icon--delete"><i class="fa-solid fa-xmark"></i></button></td>
                         </tr>
                         <tr>
                             <td>Cinto Fino Couro</td>
-                            <td>2</td>
-                            <td>R$ 49,95</td>
-                            <td>R$ 99,90</td>
-                            <td style="text-align: right;"><button type="button" class="btn-icon" style="color: #e74c3c;"><i class="fa-solid fa-xmark"></i></button></td>
+                            <td class="mono">2</td>
+                            <td class="mono">R$ 49,95</td>
+                            <td class="mono">R$ 99,90</td>
+                            <td style="text-align: right;"><button type="button" class="btn-icon btn-icon--delete"><i class="fa-solid fa-xmark"></i></button></td>
                         </tr>
                     </tbody>
                 </table>
@@ -70,14 +70,65 @@ $vendas = [
 
     <div class="card" style="display: flex; flex-direction: column;">
         <h2><i class="fa-solid fa-money-bill-wave"></i> Resumo</h2>
-        
+
         <div style="flex: 1; margin-top: 20px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px; color: var(--text-muted);">
+            <div class="pdv-summary-line">
                 <span>Subtotal:</span>
+                <span class="mono-value">R$ 259,80</span>
+            </div>
+            <div class="pdv-summary-line">
+                <span>Desconto:</span>
+                <span class="mono-value">R$ 0,00</span>
+            </div>
+            <div class="pdv-total-line">
+                <span>Total</span>
                 <span>R$ 259,80</span>
             </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 15px; color: var(--text-muted);">
-                <span>Desconto:</span>
-                <span>R$ 0,00</span>
+
+            <div class="form-group" style="margin-top: 20px;">
+                <label>Forma de Pagamento</label>
+                <select class="form-control">
+                    <option>PIX</option>
+                    <option>Cartão de Crédito</option>
+                    <option>Cartão de Débito</option>
+                    <option>Dinheiro</option>
+                </select>
             </div>
-            <div style="display: flex; justify-content: space-between; padding-top: 15px; border-top:
+        </div>
+
+        <button type="submit" class="btn" style="width: 100%;"><i class="fa-solid fa-check"></i> Finalizar Venda</button>
+    </div>
+
+</div>
+
+<div class="card">
+    <h2><i class="fa-solid fa-clock-rotate-left"></i> Histórico de Vendas</h2>
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>Pedido</th>
+                    <th>Data</th>
+                    <th>Cliente</th>
+                    <th>Itens</th>
+                    <th>Pagamento</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach($vendas as $venda): ?>
+                <tr>
+                    <td class="mono">#<?= $venda['id'] ?></td>
+                    <td><?= date('d/m/Y H:i', strtotime($venda['data'])) ?></td>
+                    <td><strong><?= $venda['cliente'] ?></strong></td>
+                    <td><small><?= $venda['itens'] ?></small></td>
+                    <td><span class="badge badge-info"><?= $venda['pagamento'] ?></span></td>
+                    <td class="mono"><strong>R$ <?= number_format($venda['total'], 2, ',', '.') ?></strong></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<?php include 'includes/footer.php'; ?>

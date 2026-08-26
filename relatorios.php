@@ -1,4 +1,4 @@
-<?php include 'includes/header.php'; ?>
+<?php $page_css = 'relatorios.css'; include 'includes/header.php'; ?>
 
 <?php
 // Dados Mockados - Relatórios
@@ -16,29 +16,6 @@ $top_produtos = [
     ['posicao' => 3, 'nome' => 'Camiseta Básica Branca', 'qtd' => 85, 'receita' => 4241.50],
 ];
 ?>
-
-<style>
-    /* Estilos para as barras de progresso do relatório */
-    .progress-bar-container {
-        width: 100%;
-        background-color: var(--border-color);
-        border-radius: 4px;
-        height: 8px;
-        margin-top: 8px;
-        overflow: hidden;
-    }
-    .progress-bar {
-        height: 100%;
-        background-color: var(--accent-color);
-        border-radius: 4px;
-    }
-    .filter-bar {
-        display: flex;
-        gap: 15px;
-        align-items: flex-end;
-        flex-wrap: wrap;
-    }
-</style>
 
 <div class="card">
     <h2><i class="fa-solid fa-filter"></i> Filtros de Relatório</h2>
@@ -72,7 +49,7 @@ $top_produtos = [
             <div style="margin-bottom: 15px;">
                 <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
                     <span><strong><?= $cat['categoria'] ?></strong></span>
-                    <span>R$ <?= number_format($cat['valor'], 2, ',', '.') ?> (<?= $cat['percentual'] ?>%)</span>
+                    <span class="mono-value">R$ <?= number_format($cat['valor'], 2, ',', '.') ?> (<?= $cat['percentual'] ?>%)</span>
                 </div>
                 <div class="progress-bar-container">
                     <div class="progress-bar" style="width: <?= $cat['percentual'] ?>%;"></div>
@@ -83,7 +60,7 @@ $top_produtos = [
     </div>
 
     <div class="card">
-        <h3><i class="fa-solid fa-trophy" style="color: #f1c40f;"></i> Top 3 Produtos (Receita)</h3>
+        <h3><i class="fa-solid fa-trophy text-brass"></i> Top 3 Produtos (Receita)</h3>
         <div class="table-responsive">
             <table>
                 <thead>
@@ -97,10 +74,10 @@ $top_produtos = [
                 <tbody>
                     <?php foreach($top_produtos as $prod): ?>
                     <tr>
-                        <td><strong><?= $prod['posicao'] ?>º</strong></td>
+                        <td class="mono"><strong><?= $prod['posicao'] ?>º</strong></td>
                         <td><?= $prod['nome'] ?></td>
-                        <td><?= $prod['qtd'] ?> un.</td>
-                        <td style="color: #27ae60;"><strong>R$ <?= number_format($prod['receita'], 2, ',', '.') ?></strong></td>
+                        <td class="mono"><?= $prod['qtd'] ?> un.</td>
+                        <td class="mono text-moss"><strong>R$ <?= number_format($prod['receita'], 2, ',', '.') ?></strong></td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>

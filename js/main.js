@@ -3,13 +3,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const sidebarToggle = document.getElementById("sidebarToggle");
     const sidebar = document.getElementById("sidebar");
 
-    sidebarToggle.addEventListener("click", () => {
-        if (window.innerWidth <= 768) {
-            sidebar.classList.toggle("active");
-        } else {
-            sidebar.classList.toggle("collapsed");
-        }
-    });
+    if (sidebarToggle && sidebar) {
+        sidebarToggle.addEventListener("click", () => {
+            if (window.innerWidth <= 768) {
+                sidebar.classList.toggle("active");
+            } else {
+                sidebar.classList.toggle("collapsed");
+            }
+        });
+    }
 
     // Validação básica de formulário
     const forms = document.querySelectorAll("form");
@@ -21,9 +23,9 @@ document.addEventListener("DOMContentLoaded", () => {
             requiredFields.forEach(field => {
                 if (!field.value.trim()) {
                     isValid = false;
-                    field.style.borderColor = "#e74c3c";
+                    field.classList.add("is-invalid");
                 } else {
-                    field.style.borderColor = "#e0e6ed";
+                    field.classList.remove("is-invalid");
                 }
             });
 
