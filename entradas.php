@@ -12,38 +12,41 @@ $entradas = [
 <div class="card">
     <h2><i class="fa-solid fa-box-open"></i> Nova Entrada de Produtos</h2>
     <p style="color: var(--ink-muted); margin-top: 5px;">Registre a entrada via Nota Fiscal ou acerto manual de estoque.</p>
-    
-    <form action="#" method="POST" style="margin-top: 10px;">
 
-        <h4 class="form-section-title"><i class="fa-solid fa-file-invoice"></i> Identificação da Nota Fiscal</h4>
-        <div class="form-grid">
-            <div class="form-group">
-                <label>Número da NF (Opcional)</label>
-                <input type="text" class="form-control" placeholder="Deixe em branco se manual">
-            </div>
-            <div class="form-group">
-                <label>Série</label>
-                <input type="text" class="form-control" placeholder="Ex: 1">
-            </div>
-            <div class="form-group">
-                <label>Natureza da Operação</label>
-                <input type="text" class="form-control" placeholder="Ex: Compra para revenda">
-            </div>
-            <div class="form-group">
-                <label>Data de Emissão</label>
-                <input type="date" class="form-control">
-            </div>
-            <div class="form-group">
-                <label>Data de Entrada</label>
-                <input type="date" class="form-control" required value="<?= date('Y-m-d') ?>">
-            </div>
-            <div class="form-group" style="grid-column: span 2;">
-                <label>Chave de Acesso</label>
-                <input type="text" class="form-control mono-value" maxlength="44" placeholder="Preenchida automaticamente ao importar o XML">
+    <div class="tab-switch" role="tablist" style="margin-top: 18px;">
+        <button type="button" class="tab-switch-btn active" data-tab="nf">Via Nota Fiscal</button>
+        <button type="button" class="tab-switch-btn" data-tab="manual">Manual</button>
+    </div>
+
+    <form action="#" method="POST">
+
+        <div id="tab-conteudo-nf">
+            <h4 class="form-section-title"><i class="fa-solid fa-file-invoice"></i> Identificação da Nota Fiscal</h4>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Número da NF</label>
+                    <input type="text" class="form-control" placeholder="Deixe em branco se manual">
+                </div>
+                <div class="form-group">
+                    <label>Série</label>
+                    <input type="text" class="form-control" placeholder="Ex: 1">
+                </div>
+                <div class="form-group">
+                    <label>Natureza da Operação</label>
+                    <input type="text" class="form-control" placeholder="Ex: Compra para revenda">
+                </div>
+                <div class="form-group">
+                    <label>Data de Emissão</label>
+                    <input type="date" class="form-control">
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label>Chave de Acesso</label>
+                    <input type="text" class="form-control mono-value" maxlength="44" placeholder="Preenchida automaticamente ao importar o XML">
+                </div>
             </div>
         </div>
 
-        <h4 class="form-section-title"><i class="fa-solid fa-truck"></i> Fornecedor (Emitente)</h4>
+        <h4 class="form-section-title"><i class="fa-solid fa-truck"></i> Fornecedor</h4>
         <div class="form-grid">
             <div class="form-group">
                 <label>Fornecedor</label>
@@ -61,20 +64,38 @@ $entradas = [
                 <label>Inscrição Estadual</label>
                 <input type="text" class="form-control mono-value" placeholder="Opcional">
             </div>
+            <div class="form-group">
+                <label>Data de Entrada</label>
+                <input type="date" class="form-control" required value="<?= date('Y-m-d') ?>">
+            </div>
         </div>
 
         <h4 class="form-section-title"><i class="fa-solid fa-tags"></i> Itens da Entrada</h4>
-        <div style="display: grid; grid-template-columns: 0.8fr 1.6fr 0.6fr 1fr 0.8fr 1fr auto; gap: 10px; align-items: end;">
+        <p class="text-muted" style="font-size: 0.85rem; margin-top: -8px; margin-bottom: 14px;">Se o código não existir no catálogo, o produto é cadastrado automaticamente com estes dados.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1.6fr 1fr 0.6fr 1fr 0.8fr 1fr auto; gap: 10px; align-items: end;">
             <div class="form-group" style="margin-bottom: 0;">
                 <label>Código</label>
-                <select class="form-control" id="item-codigo">
-                    <option value="PROD-001">PROD-001</option>
-                    <option value="PROD-002">PROD-002</option>
-                </select>
+                <input type="text" class="form-control mono-value" id="item-codigo" list="produtos-existentes" placeholder="PROD-001 ou novo">
+                <datalist id="produtos-existentes">
+                    <option value="PROD-001">
+                    <option value="PROD-002">
+                    <option value="PROD-003">
+                </datalist>
             </div>
             <div class="form-group" style="margin-bottom: 0;">
                 <label>Descrição</label>
                 <input type="text" class="form-control" id="item-descricao" placeholder="Nome do produto">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label>Categoria</label>
+                <select class="form-control" id="item-categoria">
+                    <option value="">Selecione...</option>
+                    <option>Vestidos</option>
+                    <option>Calças</option>
+                    <option>Camisetas</option>
+                    <option>Casacos</option>
+                    <option>Acessórios</option>
+                </select>
             </div>
             <div class="form-group" style="margin-bottom: 0;">
                 <label>Qtd.</label>
@@ -101,6 +122,7 @@ $entradas = [
                     <tr>
                         <th>Código</th>
                         <th>Descrição</th>
+                        <th>Categoria</th>
                         <th>Qtd.</th>
                         <th>Custo Unit.</th>
                         <th>% Lucro</th>
@@ -112,6 +134,7 @@ $entradas = [
                     <tr>
                         <td class="mono">PROD-001</td>
                         <td>Camiseta Básica de Algodão</td>
+                        <td>Camisetas</td>
                         <td class="mono">50</td>
                         <td class="mono">R$ 24,90</td>
                         <td class="mono">100%</td>
