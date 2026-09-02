@@ -9,25 +9,9 @@ $produtos = [
 ];
 ?>
 
-<div class="card">
-    <h2><i class="fa-solid fa-plus-circle"></i> Novo Produto</h2>
-    <form action="#" method="POST" style="margin-top: 15px;">
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-            <div class="form-group">
-                <label>Nome do Produto</label>
-                <input type="text" class="form-control" required placeholder="Ex: Vestido Floral">
-            </div>
-            <div class="form-group">
-                <label>Categoria</label>
-                <input type="text" class="form-control" required placeholder="Ex: Vestidos">
-            </div>
-            <div class="form-group">
-                <label>Preço (R$)</label>
-                <input type="number" step="0.01" class="form-control" required>
-            </div>
-        </div>
-        <button type="submit" class="btn"><i class="fa-solid fa-save"></i> Salvar Produto</button>
-    </form>
+<div class="info-banner">
+    <i class="fa-solid fa-circle-info"></i>
+    <p>Produtos novos são cadastrados ao registrar a <a href="entradas.php">Entrada</a> em que chegaram — assim nenhuma peça fica no catálogo sem ter dado entrada de fato no estoque. Aqui você só consulta e edita o que já existe.</p>
 </div>
 
 <div class="card">

@@ -1,3 +1,11 @@
+if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+        navigator.serviceWorker.register("sw.js").catch((erro) => {
+            console.error("Falha ao registrar o service worker:", erro);
+        });
+    });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     // Toggle Sidebar
     const sidebarToggle = document.getElementById("sidebarToggle");

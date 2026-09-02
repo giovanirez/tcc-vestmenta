@@ -1,4 +1,4 @@
-<?php $page_css = 'dashboard.css'; include 'includes/header.php'; ?>
+<?php include 'includes/header.php'; ?>
 
 <?php
 // Dados Mockados - KPIs do Dashboard
@@ -9,13 +9,7 @@ $kpis = [
     'novos_clientes' => 12
 ];
 
-// Dados Mockados - Últimas Vendas
-$ultimas_vendas = [
-    ['id' => 1042, 'cliente' => 'Mariana Oliveira', 'valor' => 159.90, 'data' => '2026-03-17', 'status' => 'Concluída'],
-    ['id' => 1041, 'cliente' => 'Carlos Mendes', 'valor' => 349.50, 'data' => '2026-03-16', 'status' => 'Concluída'],
-    ['id' => 1040, 'cliente' => 'Cliente Balcão', 'valor' => 89.90, 'data' => '2026-03-16', 'status' => 'Concluída'],
-    ['id' => 1039, 'cliente' => 'Ana Paula', 'valor' => 210.00, 'data' => '2026-03-15', 'status' => 'Concluída']
-];
+require 'includes/mock-vendas.php';
 ?>
 
 <div class="dashboard-cards">
@@ -67,15 +61,15 @@ $ultimas_vendas = [
                 </tr>
             </thead>
             <tbody>
-                <?php foreach($ultimas_vendas as $venda): ?>
+                <?php foreach($vendas as $id => $venda): ?>
                 <tr>
-                    <td class="mono">#<?= $venda['id'] ?></td>
+                    <td class="mono">#<?= $id ?></td>
                     <td><?= date('d/m/Y', strtotime($venda['data'])) ?></td>
                     <td><?= $venda['cliente'] ?></td>
-                    <td><strong class="price">R$ <?= number_format($venda['valor'], 2, ',', '.') ?></strong></td>
+                    <td><strong class="price">R$ <?= number_format($venda['total'], 2, ',', '.') ?></strong></td>
                     <td><span class="badge badge-success"><?= $venda['status'] ?></span></td>
                     <td>
-                        <button class="btn-icon btn-icon--view" title="Ver Recibo"><i class="fa-solid fa-file-invoice"></i></button>
+                        <a class="btn-icon btn-icon--view" title="Ver Recibo" href="recibo.php?venda=<?= $id ?>" target="_blank" style="text-decoration: none;"><i class="fa-solid fa-file-invoice"></i></a>
                     </td>
                 </tr>
                 <?php endforeach; ?>
