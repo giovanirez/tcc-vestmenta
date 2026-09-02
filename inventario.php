@@ -26,7 +26,7 @@ $produtos_inventario = [
     <!-- Modo: 1 contagem -->
     <div id="inventario-modo-1">
         <div class="table-responsive">
-            <table>
+            <table class="table-stack-mobile">
                 <thead>
                     <tr>
                         <th>Código</th>
@@ -39,11 +39,11 @@ $produtos_inventario = [
                 <tbody>
                     <?php foreach ($produtos_inventario as $p): ?>
                     <tr data-sistema="<?= $p['estoque'] ?>">
-                        <td class="mono"><?= $p['codigo'] ?></td>
-                        <td><?= $p['nome'] ?></td>
-                        <td class="mono"><?= $p['estoque'] ?></td>
-                        <td><input type="number" class="form-control contagem-input" min="0" placeholder="0" style="width: 90px;"></td>
-                        <td class="mono diferenca-cell">—</td>
+                        <td class="mono" data-label="Código"><?= $p['codigo'] ?></td>
+                        <td data-label="Produto"><?= $p['nome'] ?></td>
+                        <td class="mono" data-label="Estoque Sistema"><?= $p['estoque'] ?></td>
+                        <td data-label="Contagem"><input type="number" class="form-control contagem-input" min="0" placeholder="0" style="width: 90px;"></td>
+                        <td class="mono diferenca-cell" data-label="Diferença">—</td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -55,7 +55,7 @@ $produtos_inventario = [
     <div id="inventario-modo-3" style="display: none;">
         <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 10px;">A Contagem Final é a mediana das três. Linhas com as três contagens divergentes ficam marcadas para revisão antes de fechar o inventário.</p>
         <div class="table-responsive">
-            <table>
+            <table class="table-stack-mobile">
                 <thead>
                     <tr>
                         <th>Código</th>
@@ -71,14 +71,14 @@ $produtos_inventario = [
                 <tbody>
                     <?php foreach ($produtos_inventario as $p): ?>
                     <tr data-sistema="<?= $p['estoque'] ?>">
-                        <td class="mono"><?= $p['codigo'] ?></td>
-                        <td><?= $p['nome'] ?></td>
-                        <td class="mono"><?= $p['estoque'] ?></td>
-                        <td><input type="number" class="form-control contagem-c1" min="0" placeholder="0" style="width: 80px;"></td>
-                        <td><input type="number" class="form-control contagem-c2" min="0" placeholder="0" style="width: 80px;"></td>
-                        <td><input type="number" class="form-control contagem-c3" min="0" placeholder="0" style="width: 80px;"></td>
-                        <td class="mono final-cell">—</td>
-                        <td class="mono diferenca-cell">—</td>
+                        <td class="mono" data-label="Código"><?= $p['codigo'] ?></td>
+                        <td data-label="Produto"><?= $p['nome'] ?></td>
+                        <td class="mono" data-label="Estoque Sistema"><?= $p['estoque'] ?></td>
+                        <td data-label="Contagem 1"><input type="number" class="form-control contagem-c1" min="0" placeholder="0" style="width: 80px;"></td>
+                        <td data-label="Contagem 2"><input type="number" class="form-control contagem-c2" min="0" placeholder="0" style="width: 80px;"></td>
+                        <td data-label="Contagem 3"><input type="number" class="form-control contagem-c3" min="0" placeholder="0" style="width: 80px;"></td>
+                        <td class="mono final-cell" data-label="Final">—</td>
+                        <td class="mono diferenca-cell" data-label="Diferença">—</td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>

@@ -3,7 +3,7 @@
 <?php
 // Dados Mockados - Parcelas de vendas "Fiado"
 // Status não é um campo gravado: é calculado aqui do mesmo jeito que
-// seria calculado numa consulta real (ver database/README.md).
+// seria calculado numa consulta real (ver DATABASE.md).
 $parcelas_brutas = [
     ['cliente' => 'Carlos Mendes',    'venda_id' => 1039, 'numero' => 1, 'valor' => 99.80,  'vencimento' => '2026-04-16', 'pago_em' => '2026-04-15'],
     ['cliente' => 'Carlos Mendes',    'venda_id' => 1039, 'numero' => 2, 'valor' => 99.80,  'vencimento' => '2026-05-16', 'pago_em' => null],

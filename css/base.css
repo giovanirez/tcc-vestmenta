@@ -396,3 +396,45 @@ table tbody tr:hover { background-color: var(--paper); }
 
     .topbar .greeting .date { display: none; }
 }
+
+/* ============ Telas densas em celular: grade de item vira coluna única,
+   tabela interativa vira lista de cartões (padrão reaproveitável) ============ */
+@media (max-width: 640px) {
+    .content-area { padding: 16px; }
+
+    .item-add-grid {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+    }
+    .item-add-grid .form-control { width: 100% !important; }
+    .item-add-grid > button { width: 100%; }
+
+    .table-stack-mobile thead { display: none; }
+    .table-stack-mobile, .table-stack-mobile tbody { display: block; width: 100%; }
+    .table-stack-mobile tr {
+        display: block;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        margin-bottom: 12px;
+        padding: 10px 12px;
+    }
+    .table-stack-mobile tr:hover { background: none; }
+    .table-stack-mobile td {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: none;
+        padding: 6px 0;
+    }
+    .table-stack-mobile td::before {
+        content: attr(data-label);
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--ink-muted);
+        flex-shrink: 0;
+    }
+    .table-stack-mobile td .form-control { max-width: 140px; }
+}

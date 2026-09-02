@@ -1,0 +1,32 @@
+{
+    "name": "ModaSys — Gestão para Loja de Roupas",
+    "short_name": "ModaSys",
+    "description": "Sistema de gestão para loja de roupas: estoque, vendas, condicionais e financeiro.",
+    "start_url": "./index.php",
+    "scope": "./",
+    "display": "standalone",
+    "orientation": "portrait-primary",
+    "background_color": "#EDEAE3",
+    "theme_color": "#221F1C",
+    "lang": "pt-BR",
+    "icons": [
+        {
+            "src": "icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "icons/icon-512-maskable.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}

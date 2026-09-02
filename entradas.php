@@ -72,7 +72,7 @@ $entradas = [
 
         <h4 class="form-section-title"><i class="fa-solid fa-tags"></i> Itens da Entrada</h4>
         <p class="text-muted" style="font-size: 0.85rem; margin-top: -8px; margin-bottom: 14px;">Se o código não existir no catálogo, o produto é cadastrado automaticamente com estes dados.</p>
-        <div style="display: grid; grid-template-columns: 1fr 1.6fr 1fr 0.6fr 1fr 0.8fr 1fr auto; gap: 10px; align-items: end;">
+        <div class="item-add-grid" style="display: grid; grid-template-columns: 1fr 1.6fr 1fr 0.6fr 1fr 0.8fr 1fr auto; gap: 10px; align-items: end;">
             <div class="form-group" style="margin-bottom: 0;">
                 <label>Código</label>
                 <input type="text" class="form-control mono-value" id="item-codigo" list="produtos-existentes" placeholder="PROD-001 ou novo">
@@ -117,7 +117,7 @@ $entradas = [
         </div>
 
         <div class="table-responsive" style="margin-top: 15px;">
-            <table style="margin-top: 0;">
+            <table class="table-stack-mobile" style="margin-top: 0;">
                 <thead>
                     <tr>
                         <th>Código</th>
@@ -132,13 +132,13 @@ $entradas = [
                 </thead>
                 <tbody>
                     <tr>
-                        <td class="mono">PROD-001</td>
-                        <td>Camiseta Básica de Algodão</td>
-                        <td>Camisetas</td>
-                        <td class="mono">50</td>
-                        <td class="mono">R$ 24,90</td>
-                        <td class="mono">100%</td>
-                        <td class="mono">R$ 49,80</td>
+                        <td class="mono" data-label="Código">PROD-001</td>
+                        <td data-label="Descrição">Camiseta Básica de Algodão</td>
+                        <td data-label="Categoria">Camisetas</td>
+                        <td class="mono" data-label="Qtd.">50</td>
+                        <td class="mono" data-label="Custo Unit.">R$ 24,90</td>
+                        <td class="mono" data-label="% Lucro">100%</td>
+                        <td class="mono" data-label="Vlr. de Venda">R$ 49,80</td>
                         <td style="text-align: right;"><button type="button" class="btn-icon btn-icon--delete"><i class="fa-solid fa-xmark"></i></button></td>
                     </tr>
                 </tbody>
