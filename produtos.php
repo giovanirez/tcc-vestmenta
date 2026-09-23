@@ -1,17 +1,48 @@
-<?php include 'includes/header.php'; ?>
-
-<?php
-// Dados Mockados - Produtos
-$produtos = [
-    ['id' => 1, 'nome' => 'Camiseta Básica de Algodão', 'descricao' => '100% algodão, gola careca', 'preco' => 49.90, 'fornecedor' => 'Têxtil Sul', 'estoque' => 50, 'categoria' => 'Camisetas'],
-    ['id' => 2, 'nome' => 'Calça Jeans Skinny', 'descricao' => 'Jeans com elastano', 'preco' => 129.90, 'fornecedor' => 'Jeans & Cia', 'estoque' => 15, 'categoria' => 'Calças'],
-    ['id' => 3, 'nome' => 'Jaqueta de Couro PU', 'descricao' => 'Jaqueta preta com zíper', 'preco' => 249.90, 'fornecedor' => 'Couro Fino', 'estoque' => 5, 'categoria' => 'Casacos']
-];
-?>
+<?php $page_js = 'produtos.js'; include 'includes/header.php'; ?>
 
 <div class="info-banner">
     <i class="fa-solid fa-circle-info"></i>
     <p>Produtos novos são cadastrados ao registrar a <a href="entradas.php">Entrada</a> em que chegaram — assim nenhuma peça fica no catálogo sem ter dado entrada de fato no estoque. Aqui você só consulta e edita o que já existe.</p>
+</div>
+
+<div class="card" id="prod-form-card" style="display: none;">
+    <h2><i class="fa-solid fa-pen-to-square"></i> <span id="prod-form-titulo">Editar Produto</span></h2>
+    <form id="prod-form" style="margin-top: 15px;">
+        <input type="hidden" id="prod-id" value="">
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Nome</label>
+                <input type="text" class="form-control" id="prod-nome" required>
+            </div>
+            <div class="form-group">
+                <label>Categoria</label>
+                <select class="form-control" id="prod-categoria">
+                    <option value="">Sem categoria</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Fornecedor</label>
+                <select class="form-control" id="prod-fornecedor">
+                    <option value="">Sem fornecedor</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Preço de Venda (R$)</label>
+                <input type="number" step="0.01" min="0" class="form-control" id="prod-preco-venda" required>
+            </div>
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label>Descrição</label>
+                <input type="text" class="form-control" id="prod-descricao">
+            </div>
+        </div>
+
+        <p id="prod-mensagem" class="text-rust" style="display: none; margin-top: 10px; font-size: 0.85rem;"></p>
+
+        <div style="display: flex; gap: 10px;">
+            <button type="submit" class="btn"><i class="fa-solid fa-save"></i> Salvar Alterações</button>
+            <button type="button" class="btn btn-outline" id="prod-cancelar-btn">Cancelar</button>
+        </div>
+    </form>
 </div>
 
 <div class="card">
@@ -26,24 +57,12 @@ $produtos = [
                     <th>Fornecedor</th>
                     <th>Estoque</th>
                     <th>Preço</th>
+                    <th>Status</th>
                     <th>Ações</th>
                 </tr>
             </thead>
-            <tbody>
-                <?php foreach($produtos as $prod): ?>
-                <tr>
-                    <td class="mono">#<?= $prod['id'] ?></td>
-                    <td><?= $prod['nome'] ?></td>
-                    <td><?= $prod['categoria'] ?></td>
-                    <td><?= $prod['fornecedor'] ?></td>
-                    <td class="mono"><?= $prod['estoque'] ?> un.</td>
-                    <td class="mono">R$ <?= number_format($prod['preco'], 2, ',', '.') ?></td>
-                    <td>
-                        <button class="btn-icon btn-icon--edit"><i class="fa-solid fa-pen-to-square"></i></button>
-                        <button class="btn-icon btn-icon--delete"><i class="fa-solid fa-trash"></i></button>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
+            <tbody id="prod-lista">
+                <tr><td colspan="8" class="text-muted">Carregando...</td></tr>
             </tbody>
         </table>
     </div>

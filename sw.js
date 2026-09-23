@@ -1,4 +1,4 @@
-const CACHE_VERSION = "modasys-v1";
+const CACHE_VERSION = "modasys-v2";
 
 const ARQUIVOS_APP_SHELL = [
     "css/base.css",
@@ -39,6 +39,16 @@ self.addEventListener("activate", (evento) => {
 self.addEventListener("fetch", (evento) => {
     const requisicao = evento.request;
     if (requisicao.method !== "GET") return;
+
+    // Chamadas à API (backend/) nunca passam pelo cache do service
+    // worker — sempre refletem o estado atual do banco. Sem isso, uma
+    // vez que uma resposta de /produtos fosse cacheada, o app nunca
+    // mais veria uma atualização, mesmo depois de salvar algo novo.
+    const ehChamadaDeApi = new URL(requisicao.url).pathname.includes("/backend/");
+    if (ehChamadaDeApi) {
+        evento.respondWith(fetch(requisicao));
+        return;
+    }
 
     const ehNavegacao = requisicao.mode === "navigate";
 

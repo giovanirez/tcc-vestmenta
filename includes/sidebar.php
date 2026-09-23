@@ -21,6 +21,6 @@
         <li class="nav-title">Administrativo</li>
         <li><a href="custos-fixos.php" class="<?= $pagina_atual === 'custos-fixos.php' ? 'active' : '' ?>"><i class="fa-solid fa-file-invoice-dollar"></i> <span>Custos Fixos</span></a></li>
         <li><a href="relatorios.php" class="<?= $pagina_atual === 'relatorios.php' ? 'active' : '' ?>"><i class="fa-solid fa-chart-line"></i> <span>Relatórios</span></a></li>
-        <li><a href="#"><i class="fa-solid fa-gear"></i> <span>Configurações</span></a></li>
+        <li id="item-configuracoes"><a href="configuracoes.php" class="<?= $pagina_atual === 'configuracoes.php' ? 'active' : '' ?>"><i class="fa-solid fa-gear"></i> <span>Configurações</span></a></li>
     </ul>
 </aside>

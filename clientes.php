@@ -1,37 +1,29 @@
 <?php $page_js = 'clientes.js'; include 'includes/header.php'; ?>
 
-<?php
-// Dados Mockados - Clientes
-$clientes = [
-    ['id' => 101, 'nome' => 'Mariana Oliveira', 'cpf' => '111.222.333-44', 'telefone' => '(11) 98888-7777', 'email' => 'mariana.oliveira@email.com', 'logradouro' => 'Av. Central', 'numero' => '45', 'complemento' => 'Apto 302', 'bairro' => 'Centro', 'cidade' => 'São Paulo', 'uf' => 'SP'],
-    ['id' => 102, 'nome' => 'Carlos Mendes', 'cpf' => '222.333.444-55', 'telefone' => '(11) 97777-6666', 'email' => 'carlos.mendes@email.com', 'logradouro' => 'Rua das Flores', 'numero' => '128', 'complemento' => '', 'bairro' => 'Bairro Alto', 'cidade' => 'São Paulo', 'uf' => 'SP'],
-    ['id' => 103, 'nome' => 'Ana Paula Silva', 'cpf' => '333.444.555-66', 'telefone' => '(11) 96666-5555', 'email' => 'anapaula.silva@email.com', 'logradouro' => 'Praça da Liberdade', 'numero' => '10', 'complemento' => '', 'bairro' => 'Bela Vista', 'cidade' => 'São Paulo', 'uf' => 'SP']
-];
-?>
-
 <div class="card">
-    <h2><i class="fa-solid fa-user-plus"></i> Novo Cliente</h2>
-    <form action="#" method="POST" style="margin-top: 15px;">
+    <h2><i class="fa-solid fa-user-plus"></i> <span id="cli-form-titulo">Novo Cliente</span></h2>
+    <form id="cli-form" style="margin-top: 15px;">
+        <input type="hidden" id="cli-id" value="">
         <div class="form-grid">
             <div class="form-group">
                 <label>Nome Completo</label>
-                <input type="text" class="form-control" required placeholder="Ex: Maria João">
+                <input type="text" class="form-control" id="cli-nome" required placeholder="Ex: Maria João">
             </div>
             <div class="form-group">
                 <label>Telefone</label>
-                <input type="text" class="form-control" required placeholder="(00) 90000-0000">
+                <input type="text" class="form-control" id="cli-telefone" required placeholder="(00) 90000-0000" maxlength="15" inputmode="numeric">
             </div>
             <div class="form-group">
                 <label>CPF</label>
-                <input type="text" class="form-control mono-value" placeholder="Opcional">
+                <input type="text" class="form-control mono-value" id="cli-cpf" placeholder="Opcional" maxlength="14" inputmode="numeric">
             </div>
             <div class="form-group">
                 <label>E-mail</label>
-                <input type="email" class="form-control" placeholder="Opcional">
+                <input type="email" class="form-control" id="cli-email" placeholder="Opcional">
             </div>
             <div class="form-group">
                 <label>Limite de Crédito p/ Fiado (R$)</label>
-                <input type="number" step="0.01" class="form-control" placeholder="Deixe em branco se não vende fiado">
+                <input type="number" step="0.01" class="form-control" id="cli-limite-credito" placeholder="Deixe em branco se não vende fiado">
             </div>
         </div>
 
@@ -39,7 +31,7 @@ $clientes = [
         <div class="form-grid">
             <div class="form-group" style="max-width: 160px;">
                 <label>CEP</label>
-                <input type="text" class="form-control mono-value" id="cli-cep" placeholder="00000-000" maxlength="9">
+                <input type="text" class="form-control mono-value" id="cli-cep" placeholder="00000-000" maxlength="9" inputmode="numeric">
             </div>
             <div class="form-group" style="grid-column: span 2;">
                 <label>Rua / Logradouro</label>
@@ -67,7 +59,12 @@ $clientes = [
             </div>
         </div>
 
-        <button type="submit" class="btn"><i class="fa-solid fa-save"></i> Guardar Cliente</button>
+        <p id="cli-mensagem" class="text-rust" style="display: none; margin-top: 10px; font-size: 0.85rem;"></p>
+
+        <div style="display: flex; gap: 10px;">
+            <button type="submit" class="btn" id="cli-submit-btn"><i class="fa-solid fa-save"></i> Guardar Cliente</button>
+            <button type="button" class="btn btn-outline" id="cli-cancelar-btn" style="display: none;">Cancelar edição</button>
+        </div>
     </form>
 </div>
 
@@ -85,25 +82,8 @@ $clientes = [
                     <th>Ações</th>
                 </tr>
             </thead>
-            <tbody>
-                <?php foreach($clientes as $cli): ?>
-                <tr>
-                    <td class="mono">#<?= $cli['id'] ?></td>
-                    <td><strong><?= $cli['nome'] ?></strong></td>
-                    <td class="mono"><?= $cli['cpf'] ?: '—' ?></td>
-                    <td>
-                        <div><i class="fa-solid fa-mobile-screen text-muted" style="font-size: 0.8rem;"></i> <?= $cli['telefone'] ?></div>
-                        <?php if(!empty($cli['email'])): ?>
-                            <div><i class="fa-solid fa-envelope text-muted" style="font-size: 0.8rem;"></i> <?= $cli['email'] ?></div>
-                        <?php endif; ?>
-                    </td>
-                    <td><small><?= $cli['logradouro'] ? "{$cli['logradouro']}, {$cli['numero']} - {$cli['bairro']}, {$cli['cidade']}/{$cli['uf']}" : '—' ?></small></td>
-                    <td>
-                        <button class="btn-icon btn-icon--edit" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
-                        <button class="btn-icon btn-icon--view" title="Ver Histórico"><i class="fa-solid fa-clock-rotate-left"></i></button>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
+            <tbody id="cli-lista">
+                <tr><td colspan="6" class="text-muted">Carregando...</td></tr>
             </tbody>
         </table>
     </div>
