@@ -81,5 +81,6 @@
     </div>
 
     <script src="js/main.js"></script>
+    <script src="js/pages/login.js"></script>
 </body>
 </html>

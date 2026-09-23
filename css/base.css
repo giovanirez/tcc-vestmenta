@@ -340,6 +340,40 @@ table tbody tr:hover { background-color: var(--paper); }
 .tab-switch-btn:hover { color: var(--ink); }
 .tab-switch-btn.active { background: var(--surface); color: var(--thread); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
 
+/* ============ Modal de confirmação (substitui o confirm() nativo) ============ */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(34, 31, 28, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 20px;
+}
+
+.modal-caixa {
+    background: var(--surface);
+    border-radius: var(--radius-md);
+    padding: 28px;
+    max-width: 380px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+}
+
+.modal-icone { font-size: 2rem; color: var(--brass); margin-bottom: 12px; }
+
+.modal-caixa p {
+    margin-bottom: 22px;
+    color: var(--ink);
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.modal-acoes { display: flex; gap: 10px; justify-content: center; }
+.modal-acoes .btn, .modal-acoes .btn-outline { flex: 1; }
+
 /* ============ Aviso informativo ============ */
 .info-banner {
     display: flex;

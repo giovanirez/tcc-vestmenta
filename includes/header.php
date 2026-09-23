@@ -41,11 +41,15 @@ $data_extenso = $dias_semana[date('w')] . ', ' . date('d/m/Y');
                     <i class="fa-solid fa-bars"></i>
                 </button>
                 <div class="greeting">
-                    <?= $saudacao ?>, Admin
+                    <?= $saudacao ?>, <span id="saudacao-nome">Admin</span>
                     <span class="date"><?= $data_extenso ?></span>
                 </div>
                 <div class="user-info">
                     <i class="fa-solid fa-circle-user" style="font-size: 1.4rem;"></i>
+                    <span id="usuario-logado-nome">Admin</span>
+                    <button id="botao-sair" class="btn-icon" title="Sair">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
                 </div>
             </header>
             <main class="content-area">
