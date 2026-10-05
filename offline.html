@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#221F1C">
+    <title>Sem conexão · ModaSys</title>
+    <link rel="icon" href="icons/icon-192.png">
+    <!-- Página que o service worker mostra quando não há internet e a
+         página pedida ainda não estava em cache. É HTML puro (sem PHP
+         nem fontes externas) justamente pra funcionar 100% offline. -->
+    <style>
+        :root { --ink: #221F1C; --ink-muted: #726A5F; --paper: #EDEAE3; --surface: #FFFFFF; --border: #DEDACF; --thread: #8C2F2F; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            padding: 16px; background: var(--paper); color: var(--ink);
+            font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.5;
+        }
+        .cartao {
+            max-width: 420px; width: 100%; background: var(--surface); border: 1px solid var(--border);
+            border-radius: 6px; padding: 32px 28px; text-align: center;
+        }
+        img { width: 64px; height: 64px; border-radius: 12px; margin-bottom: 16px; }
+        h1 { font-family: Georgia, serif; font-weight: 600; font-size: 1.35rem; margin-bottom: 8px; }
+        p { color: var(--ink-muted); font-size: 0.92rem; }
+        button {
+            margin-top: 22px; background: var(--thread); color: #fff; border: none; border-radius: 3px;
+            padding: 10px 22px; font-size: 0.95rem; font-weight: 500; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="cartao">
+        <img src="icons/icon-192.png" alt="">
+        <h1>Você está sem conexão</h1>
+        <p>O ModaSys precisa de internet para buscar estoque, vendas e clientes. Assim que a conexão voltar, esta página recarrega sozinha.</p>
+        <button type="button" onclick="location.reload()">Tentar de novo</button>
+    </div>
+    <script>window.addEventListener("online", () => location.reload());</script>
+</body>
+</html>

@@ -472,3 +472,26 @@ table tbody tr:hover { background-color: var(--paper); }
     }
     .table-stack-mobile td .form-control { max-width: 140px; }
 }
+
+/* ============ PWA ============ */
+/* Botão "Instalar app" — só aparece quando o navegador permite instalar */
+.btn-instalar {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--ink); color: #fff; border: none; border-radius: var(--radius-sm);
+    padding: 6px 12px; font-family: var(--font-body); font-size: 0.82rem; font-weight: 500;
+    cursor: pointer; margin-right: 8px; transition: var(--transition);
+}
+.btn-instalar:hover { background: var(--thread); }
+
+/* Faixa fixa no topo quando o dispositivo fica sem internet */
+.aviso-offline {
+    position: sticky; top: 0; z-index: 1000;
+    background: var(--rust); color: #fff; text-align: center;
+    padding: 8px 16px; font-size: 0.85rem; font-weight: 500;
+}
+.aviso-offline i { margin-right: 6px; }
+
+@media (max-width: 768px) {
+    .btn-instalar span { display: none; }
+    .btn-instalar { padding: 6px 10px; }
+}
