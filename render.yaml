@@ -32,12 +32,11 @@ services:
       # Chave dos tokens de login, gerada aleatoriamente pelo Render.
       - key: JWT_SECRET
         generateValue: true
-      # CORS: só o front pode chamar a API pelo navegador.
+      # CORS: só o front pode chamar a API pelo navegador. Fica fixo
+      # porque o "fromService > host" do Render dá o nome INTERNO do
+      # serviço (modasys-web), não o domínio público.
       - key: FRONTEND_ORIGIN
-        fromService:
-          type: web
-          name: modasys-web
-          property: host
+        value: https://modasys-web.onrender.com
 
   # Front-end — só páginas e arquivos estáticos, sem acesso ao banco
   - type: web
@@ -48,8 +47,7 @@ services:
     dockerfilePath: ./Dockerfile
     dockerContext: .
     envVars:
+      # Domínio público da API (o navegador do usuário é quem chama,
+      # então não serve o nome interno da rede do Render).
       - key: API_URL
-        fromService:
-          type: web
-          name: modasys-api
-          property: host
+        value: https://modasys-api.onrender.com
