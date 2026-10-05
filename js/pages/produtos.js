@@ -38,7 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function carregarLista() {
         try {
-            const resposta = await ModaSysAuth.requisitar("backend/public/index.php/produtos");
+            const resposta = await ModaSysAuth.requisitar("/produtos");
             produtosCache = await resposta.json();
 
             listaEl.innerHTML = produtosCache.length
@@ -51,7 +51,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function carregarOpcoes(select, caminho, rotuloCampo) {
         try {
-            const resposta = await ModaSysAuth.requisitar(`backend/public/index.php/${caminho}`);
+            const resposta = await ModaSysAuth.requisitar(`/${caminho}`);
             const itens = await resposta.json();
             itens.forEach(item => {
                 const opcao = document.createElement("option");
@@ -90,7 +90,7 @@ document.addEventListener("DOMContentLoaded", () => {
         mensagemEl.style.display = "none";
 
         try {
-            const resposta = await ModaSysAuth.requisitar(`backend/public/index.php/produtos/${idInput.value}`, {
+            const resposta = await ModaSysAuth.requisitar(`/produtos/${idInput.value}`, {
                 method: "PUT",
                 body: JSON.stringify({
                     nome: nome.value,
@@ -135,7 +135,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!confirmado) return;
 
             try {
-                await ModaSysAuth.requisitar(`backend/public/index.php/produtos/${id}/ativo`, { method: "PATCH" });
+                await ModaSysAuth.requisitar(`/produtos/${id}/ativo`, { method: "PATCH" });
                 await carregarLista();
             } catch (erro) {
                 alert(erro.message);

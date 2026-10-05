@@ -9,6 +9,11 @@ class Cors
     public static function aplicar(): void
     {
         $origemPermitida = Env::obter('FRONTEND_ORIGIN', '*');
+        // No Render a origem do front chega só como domínio
+        // (modasys-web.onrender.com) — o navegador compara com https://.
+        if ($origemPermitida !== '*' && !preg_match('#^https?://#', $origemPermitida)) {
+            $origemPermitida = 'https://' . $origemPermitida;
+        }
 
         header("Access-Control-Allow-Origin: {$origemPermitida}");
         header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');

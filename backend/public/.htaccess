@@ -1,0 +1,11 @@
+# URLs limpas: /produtos -> index.php/produtos (o Router lê o PATH_INFO).
+# Localmente no XAMPP continua funcionando o formato antigo
+# backend/public/index.php/produtos, que nem passa por esta regra.
+RewriteEngine On
+RewriteRule ^index\.php - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^(.*)$ index.php/$1 [L,QSA]
+
+# O Apache costuma descartar o cabeçalho Authorization antes de chegar
+# no PHP — sem isto, todo request autenticado viraria 401.
+SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1

@@ -27,13 +27,19 @@ const ModaSysAuth = {
         window.location.href = "index.php";
     },
 
+    // Monta a URL completa de uma rota da API ("/produtos" ->
+    // "https://api.../produtos"). A base vem de includes/config-api.php.
+    url(rota) {
+        return (window.MODASYS_API_URL || "backend/public/index.php") + rota;
+    },
+
     // Fetch com o token já anexado. Se o backend responder 401 (token
     // ausente/expirado), desloga automaticamente — não deixa a página
     // continuar como se ainda estivesse autenticada.
     async requisitar(caminho, opcoes = {}) {
         const token = this.obterToken();
 
-        const resposta = await fetch(caminho, {
+        const resposta = await fetch(this.url(caminho), {
             ...opcoes,
             headers: {
                 "Content-Type": "application/json",

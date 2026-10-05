@@ -1,4 +1,6 @@
-const CACHE_VERSION = "modasys-v2";
+// Suba a versão sempre que mudar CSS/JS: os arquivos abaixo são servidos
+// "cache primeiro", então sem isso o navegador continua com a cópia velha.
+const CACHE_VERSION = "modasys-v5";
 
 const ARQUIVOS_APP_SHELL = [
     "css/base.css",
@@ -10,7 +12,12 @@ const ARQUIVOS_APP_SHELL = [
     "js/pages/clientes.js",
     "js/pages/fornecedores.js",
     "js/pages/vendas.js",
+    "js/pages/contas-a-receber.js",
     "js/pages/inventario.js",
+    "js/pages/condicionais.js",
+    "js/pages/custos-fixos.js",
+    "js/pages/dashboard.js",
+    "js/pages/relatorios.js",
     "manifest.json",
     "icons/icon-192.png",
     "icons/icon-512.png",
@@ -40,13 +47,15 @@ self.addEventListener("fetch", (evento) => {
     const requisicao = evento.request;
     if (requisicao.method !== "GET") return;
 
-    // Chamadas à API (backend/) nunca passam pelo cache do service
-    // worker — sempre refletem o estado atual do banco. Sem isso, uma
-    // vez que uma resposta de /produtos fosse cacheada, o app nunca
-    // mais veria uma atualização, mesmo depois de salvar algo novo.
-    const ehChamadaDeApi = new URL(requisicao.url).pathname.includes("/backend/");
-    if (ehChamadaDeApi) {
-        evento.respondWith(fetch(requisicao));
+    // Chamadas à API nunca passam pelo cache do service worker — sempre
+    // refletem o estado atual do banco. Sem isso, uma vez que uma
+    // resposta de /produtos fosse cacheada, o app nunca mais veria uma
+    // atualização. Em produção a API fica em outro domínio (outro
+    // serviço do Cloud Run), então tudo que não é da origem do front
+    // (API, ViaCEP, BrasilAPI) vai direto pra rede. Localmente, no
+    // XAMPP, a API fica em /backend/ na mesma origem.
+    const url = new URL(requisicao.url);
+    if (url.origin !== self.location.origin || url.pathname.includes("/backend/")) {
         return;
     }
 

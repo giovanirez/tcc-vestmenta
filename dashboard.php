@@ -1,30 +1,18 @@
-<?php include 'includes/header.php'; ?>
-
-<?php
-// Dados Mockados - KPIs do Dashboard
-$kpis = [
-    'vendas_mes' => 15420.50,
-    'condicionais_abertas' => 8,
-    'produtos_baixa' => 5,
-    'novos_clientes' => 12
-];
-
-require 'includes/mock-vendas.php';
-?>
+<?php $page_js = 'dashboard.js'; include 'includes/header.php'; ?>
 
 <div class="dashboard-cards">
     <div class="tag-card tag-card--moss">
         <div class="kpi-icon"><i class="fa-solid fa-sack-dollar"></i></div>
         <div class="kpi-info">
-            <h3>R$ <?= number_format($kpis['vendas_mes'], 2, ',', '.') ?></h3>
-            <p>Vendas no Mês</p>
+            <h3 id="kpi-vendas-mes">R$ 0,00</h3>
+            <p>Vendas no Mês <small class="text-muted" id="kpi-qtd-vendas"></small></p>
         </div>
     </div>
 
     <div class="tag-card tag-card--brass">
         <div class="kpi-icon"><i class="fa-solid fa-person-booth"></i></div>
         <div class="kpi-info">
-            <h3><?= $kpis['condicionais_abertas'] ?></h3>
+            <h3 id="kpi-condicionais">0</h3>
             <p>Condicionais Abertas</p>
         </div>
     </div>
@@ -32,7 +20,7 @@ require 'includes/mock-vendas.php';
     <div class="tag-card tag-card--rust">
         <div class="kpi-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
         <div class="kpi-info">
-            <h3><?= $kpis['produtos_baixa'] ?></h3>
+            <h3 id="kpi-produtos-baixa">0</h3>
             <p>Produtos em Baixa</p>
         </div>
     </div>
@@ -40,7 +28,7 @@ require 'includes/mock-vendas.php';
     <div class="tag-card tag-card--denim">
         <div class="kpi-icon"><i class="fa-solid fa-user-plus"></i></div>
         <div class="kpi-info">
-            <h3><?= $kpis['novos_clientes'] ?></h3>
+            <h3 id="kpi-novos-clientes">0</h3>
             <p>Novos Clientes</p>
         </div>
     </div>
@@ -60,20 +48,25 @@ require 'includes/mock-vendas.php';
                     <th>Ações</th>
                 </tr>
             </thead>
-            <tbody>
-                <?php foreach($vendas as $id => $venda): ?>
-                <tr>
-                    <td class="mono">#<?= $id ?></td>
-                    <td><?= date('d/m/Y', strtotime($venda['data'])) ?></td>
-                    <td><?= $venda['cliente'] ?></td>
-                    <td><strong class="price">R$ <?= number_format($venda['total'], 2, ',', '.') ?></strong></td>
-                    <td><span class="badge badge-success"><?= $venda['status'] ?></span></td>
-                    <td>
-                        <a class="btn-icon btn-icon--view" title="Ver Recibo" href="recibo.php?venda=<?= $id ?>" target="_blank" style="text-decoration: none;"><i class="fa-solid fa-file-invoice"></i></a>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
+            <tbody id="dash-ultimas-vendas">
+                <tr><td colspan="6" class="text-muted">Carregando...</td></tr>
             </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card" id="dash-baixa-card" style="display: none;">
+    <h2><i class="fa-solid fa-boxes-stacked"></i> Produtos em Baixa <small class="text-muted" id="dash-baixa-limite"></small></h2>
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Produto</th>
+                    <th>Estoque</th>
+                </tr>
+            </thead>
+            <tbody id="dash-baixa-lista"></tbody>
         </table>
     </div>
 </div>
