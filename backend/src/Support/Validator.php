@@ -12,7 +12,7 @@ class Validator
 
     public function obrigatorio(array $dados, string $campo, string $rotulo): static
     {
-        if (empty($dados[$campo]) && $dados[$campo] !== '0') {
+        if (empty($dados[$campo]) && ($dados[$campo] ?? null) !== '0') {
             $this->erros[] = "{$rotulo} é obrigatório.";
         }
         return $this;

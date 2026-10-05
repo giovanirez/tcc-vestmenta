@@ -165,7 +165,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function carregarLista() {
         try {
-            const resposta = await ModaSysAuth.requisitar("backend/public/index.php/fornecedores");
+            const resposta = await ModaSysAuth.requisitar("/fornecedores");
             fornecedoresCache = await resposta.json();
 
             listaEl.innerHTML = fornecedoresCache.length
@@ -199,8 +199,8 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const resposta = await ModaSysAuth.requisitar(
                 emEdicao
-                    ? `backend/public/index.php/fornecedores/${idInput.value}`
-                    : "backend/public/index.php/fornecedores",
+                    ? `/fornecedores/${idInput.value}`
+                    : "/fornecedores",
                 { method: emEdicao ? "PUT" : "POST", body: JSON.stringify(corpo) }
             );
 
@@ -238,7 +238,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!confirmado) return;
 
             try {
-                await ModaSysAuth.requisitar(`backend/public/index.php/fornecedores/${id}/ativo`, { method: "PATCH" });
+                await ModaSysAuth.requisitar(`/fornecedores/${id}/ativo`, { method: "PATCH" });
                 await carregarLista();
             } catch (erro) {
                 alert(erro.message);

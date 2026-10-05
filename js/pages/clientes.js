@@ -82,7 +82,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function carregarLista() {
         try {
-            const resposta = await ModaSysAuth.requisitar("backend/public/index.php/clientes");
+            const resposta = await ModaSysAuth.requisitar("/clientes");
             clientesCache = await resposta.json();
 
             listaEl.innerHTML = clientesCache.length
@@ -146,8 +146,8 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const resposta = await ModaSysAuth.requisitar(
                 emEdicao
-                    ? `backend/public/index.php/clientes/${idInput.value}`
-                    : "backend/public/index.php/clientes",
+                    ? `/clientes/${idInput.value}`
+                    : "/clientes",
                 { method: emEdicao ? "PUT" : "POST", body: JSON.stringify(corpo) }
             );
 

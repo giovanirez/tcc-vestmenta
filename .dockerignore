@@ -1,0 +1,15 @@
+# Nada disso vai pro container do front-end
+backend/
+config/
+.env
+.env.*
+*.sql
+*.md
+.git/
+.gitignore
+.claude/
+.agents/
+skills-lock.json
+Dockerfile
+.dockerignore
+render.yaml

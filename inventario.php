@@ -1,18 +1,5 @@
 <?php $page_js = 'inventario.js'; include 'includes/header.php'; ?>
 
-<?php
-// Dados Mockados - Estoque atual de todos os produtos (os mesmos
-// valores que o gatilho de documentos calcularia no banco real)
-$produtos_inventario = [
-    ['codigo' => 'PROD-001', 'nome' => 'Camiseta Básica de Algodão', 'estoque' => 133],
-    ['codigo' => 'PROD-002', 'nome' => 'Calça Jeans Skinny',         'estoque' => 29],
-    ['codigo' => 'PROD-003', 'nome' => 'Jaqueta de Couro PU',        'estoque' => 14],
-    ['codigo' => 'PROD-004', 'nome' => 'Vestido Floral Verão',       'estoque' => 18],
-    ['codigo' => 'PROD-005', 'nome' => 'Cinto Fino Couro',           'estoque' => 27],
-    ['codigo' => 'PROD-006', 'nome' => 'Camisa Social Azul',         'estoque' => 8],
-    ['codigo' => 'PROD-007', 'nome' => 'Saia Plissada',              'estoque' => 7],
-];
-?>
 
 <div class="card">
     <h2><i class="fa-solid fa-clipboard-check"></i> Inventário de Estoque</h2>
@@ -36,16 +23,8 @@ $produtos_inventario = [
                         <th>Diferença</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <?php foreach ($produtos_inventario as $p): ?>
-                    <tr data-sistema="<?= $p['estoque'] ?>">
-                        <td class="mono" data-label="Código"><?= $p['codigo'] ?></td>
-                        <td data-label="Produto"><?= $p['nome'] ?></td>
-                        <td class="mono" data-label="Estoque Sistema"><?= $p['estoque'] ?></td>
-                        <td data-label="Contagem"><input type="number" class="form-control contagem-input" min="0" placeholder="0" style="width: 90px;"></td>
-                        <td class="mono diferenca-cell" data-label="Diferença">—</td>
-                    </tr>
-                    <?php endforeach; ?>
+                <tbody id="inventario-lista-1">
+                    <tr><td colspan="5" class="text-muted">Carregando...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -68,27 +47,63 @@ $produtos_inventario = [
                         <th>Diferença</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <?php foreach ($produtos_inventario as $p): ?>
-                    <tr data-sistema="<?= $p['estoque'] ?>">
-                        <td class="mono" data-label="Código"><?= $p['codigo'] ?></td>
-                        <td data-label="Produto"><?= $p['nome'] ?></td>
-                        <td class="mono" data-label="Estoque Sistema"><?= $p['estoque'] ?></td>
-                        <td data-label="Contagem 1"><input type="number" class="form-control contagem-c1" min="0" placeholder="0" style="width: 80px;"></td>
-                        <td data-label="Contagem 2"><input type="number" class="form-control contagem-c2" min="0" placeholder="0" style="width: 80px;"></td>
-                        <td data-label="Contagem 3"><input type="number" class="form-control contagem-c3" min="0" placeholder="0" style="width: 80px;"></td>
-                        <td class="mono final-cell" data-label="Final">—</td>
-                        <td class="mono diferenca-cell" data-label="Diferença">—</td>
-                    </tr>
-                    <?php endforeach; ?>
+                <tbody id="inventario-lista-3">
+                    <tr><td colspan="8" class="text-muted">Carregando...</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 
-    <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+    <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-wrap: wrap;">
         <p id="inventario-resumo" class="text-muted" style="font-size: 0.9rem;">Nenhuma contagem lançada ainda.</p>
-        <button type="button" class="btn"><i class="fa-solid fa-check"></i> Finalizar Inventário</button>
+        <button type="button" class="btn" id="inventario-finalizar-btn"><i class="fa-solid fa-check"></i> Finalizar Inventário</button>
+    </div>
+    <p id="inventario-mensagem" class="text-rust" style="display: none; margin-top: 10px; font-size: 0.85rem;"></p>
+    <p id="inventario-aviso-admin" class="text-muted" style="display: none; margin-top: 10px; font-size: 0.85rem;"><i class="fa-solid fa-lock"></i> Só um administrador pode finalizar o inventário e aplicar os ajustes no estoque.</p>
+</div>
+
+<div class="card" id="perda-card">
+    <h2><i class="fa-solid fa-heart-crack"></i> Registrar Perda / Avaria</h2>
+    <p class="text-muted" style="margin-top: 5px;">Peça danificada, extraviada ou retirada para uso da loja — sai do estoque sem ser venda.</p>
+    <form id="perda-form" style="margin-top: 15px;" novalidate>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Produto</label>
+                <select class="form-control" id="perda-produto">
+                    <option value="">Selecione o produto...</option>
+                </select>
+            </div>
+            <div class="form-group" style="max-width: 120px;">
+                <label>Quantidade</label>
+                <input type="number" class="form-control" id="perda-quantidade" value="1" min="1">
+            </div>
+            <div class="form-group" style="grid-column: span 2;">
+                <label>Motivo</label>
+                <input type="text" class="form-control" id="perda-motivo" maxlength="255" placeholder="Ex: peça manchada no provador">
+            </div>
+        </div>
+        <p id="perda-mensagem" class="text-rust" style="display: none; margin-bottom: 10px; font-size: 0.85rem;"></p>
+        <button type="submit" class="btn" id="perda-submit-btn"><i class="fa-solid fa-minus"></i> Registrar Perda</button>
+    </form>
+</div>
+
+<div class="card">
+    <h2><i class="fa-solid fa-clock-rotate-left"></i> Últimos Ajustes de Estoque</h2>
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Tipo</th>
+                    <th>Origem</th>
+                    <th>Peças</th>
+                    <th>Observação</th>
+                </tr>
+            </thead>
+            <tbody id="ajustes-lista">
+                <tr><td colspan="5" class="text-muted">Carregando...</td></tr>
+            </tbody>
+        </table>
     </div>
 </div>
 

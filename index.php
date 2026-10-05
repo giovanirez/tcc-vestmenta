@@ -19,6 +19,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/pages/index.css">
+    <?php include 'includes/config-api.php'; ?>
 </head>
 <body class="login-body">
     <div class="login-screen">

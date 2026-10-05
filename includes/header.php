@@ -30,6 +30,7 @@ $data_extenso = $dias_semana[date('w')] . ', ' . date('d/m/Y');
     <?php if (!empty($page_css)): ?>
     <link rel="stylesheet" href="css/pages/<?= $page_css ?>">
     <?php endif; ?>
+    <?php include __DIR__ . '/config-api.php'; ?>
 </head>
 <body>
     <div class="wrapper">

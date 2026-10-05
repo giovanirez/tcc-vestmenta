@@ -48,7 +48,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function carregarLista() {
         try {
-            const resposta = await ModaSysAuth.requisitar("backend/public/index.php/usuarios");
+            const resposta = await ModaSysAuth.requisitar("/usuarios");
             usuariosCache = await resposta.json();
 
             listaEl.innerHTML = usuariosCache.length
@@ -97,7 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
             if (emEdicao) {
-                const resposta = await ModaSysAuth.requisitar(`backend/public/index.php/usuarios/${idInput.value}`, {
+                const resposta = await ModaSysAuth.requisitar(`/usuarios/${idInput.value}`, {
                     method: "PUT",
                     body: JSON.stringify({ nome: nome.value, email: email.value, papel: papel.value }),
                 });
@@ -105,7 +105,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (!resposta.ok) throw new Error(dados.erro || "Não foi possível salvar.");
 
                 if (senha.value) {
-                    const respostaSenha = await ModaSysAuth.requisitar(`backend/public/index.php/usuarios/${idInput.value}/senha`, {
+                    const respostaSenha = await ModaSysAuth.requisitar(`/usuarios/${idInput.value}/senha`, {
                         method: "PATCH",
                         body: JSON.stringify({ senha: senha.value }),
                     });
@@ -113,7 +113,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (!respostaSenha.ok) throw new Error(dadosSenha.erro || "Não foi possível redefinir a senha.");
                 }
             } else {
-                const resposta = await ModaSysAuth.requisitar("backend/public/index.php/usuarios", {
+                const resposta = await ModaSysAuth.requisitar("/usuarios", {
                     method: "POST",
                     body: JSON.stringify({ nome: nome.value, email: email.value, senha: senha.value, papel: papel.value }),
                 });
@@ -152,7 +152,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!confirmado) return;
 
             try {
-                await ModaSysAuth.requisitar(`backend/public/index.php/usuarios/${id}/ativo`, { method: "PATCH" });
+                await ModaSysAuth.requisitar(`/usuarios/${id}/ativo`, { method: "PATCH" });
                 await carregarLista();
             } catch (erro) {
                 alert(erro.message);

@@ -89,6 +89,46 @@ class ProdutoRepository
         return $consulta->fetch();
     }
 
+    // Busca vários produtos travando as linhas (FOR UPDATE) até o fim
+    // da transação: assim duas vendas simultâneas da mesma peça não
+    // conseguem as duas "ver" o mesmo saldo e vender além do estoque.
+    public function buscarParaMovimentar(array $ids): array
+    {
+        if (!$ids) {
+            return [];
+        }
+        $marcadores = implode(',', array_fill(0, count($ids), '?'));
+        $consulta = $this->pdo->prepare("SELECT * FROM produtos WHERE id IN ({$marcadores}) FOR UPDATE");
+        $consulta->execute(array_values($ids));
+
+        $porId = [];
+        foreach ($consulta->fetchAll() as $produto) {
+            $porId[(int) $produto['id']] = $produto;
+        }
+        return $porId;
+    }
+
+    public function buscarPorCodigo(string $codigo): ?array
+    {
+        $consulta = $this->pdo->prepare('SELECT * FROM produtos WHERE codigo_interno = :codigo');
+        $consulta->execute(['codigo' => $codigo]);
+        $produto = $consulta->fetch();
+        return $produto ?: null;
+    }
+
+    // Chamado a cada entrada de um produto que já existe: o custo
+    // passa a ser o da última compra, e o preço de venda só muda se
+    // a entrada trouxe um novo.
+    public function atualizarPrecosDaEntrada(int $id, float $precoCusto, ?float $precoVenda): void
+    {
+        $consulta = $this->pdo->prepare(
+            'UPDATE produtos SET preco_custo = :preco_custo,
+                preco_venda = COALESCE(:preco_venda, preco_venda)
+             WHERE id = :id'
+        );
+        $consulta->execute(['id' => $id, 'preco_custo' => $precoCusto, 'preco_venda' => $precoVenda]);
+    }
+
     public function codigoJaExiste(string $codigo, ?int $ignorarId = null): bool
     {
         if ($ignorarId !== null) {

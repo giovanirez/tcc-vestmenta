@@ -1,22 +1,18 @@
 <?php $page_css = 'vendas.css'; $page_js = 'vendas.js'; include 'includes/header.php'; ?>
 
-<?php require 'includes/mock-vendas.php'; ?>
-
 <div class="pdv-layout">
 
     <div class="card">
         <h2><i class="fa-solid fa-cart-arrow-down"></i> Frente de Caixa (PDV)</h2>
 
-        <form action="#" method="POST" style="margin-top: 15px;">
+        <form id="pdv-form" style="margin-top: 15px;" novalidate>
             <div class="form-group">
                 <label>Cliente</label>
                 <div style="display: flex; gap: 10px;">
                     <select class="form-control" id="pdv-cliente" style="flex: 1;">
                         <option value="balcao">Cliente Balcão (Não Identificado)</option>
-                        <option value="1">Mariana Oliveira</option>
-                        <option value="2">Carlos Mendes</option>
                     </select>
-                    <button type="button" class="btn-icon" title="Novo Cliente" style="background: var(--paper); padding: 0 15px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);"><i class="fa-solid fa-user-plus"></i></button>
+                    <a href="clientes.php" target="_blank" class="btn-icon" title="Cadastrar novo cliente (abre em outra aba)" style="display: flex; align-items: center; text-decoration: none; "background: var(--paper); padding: 0 15px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);"><i class="fa-solid fa-user-plus"></i></a>
                 </div>
                 <small id="pdv-cliente-aviso" class="text-rust" style="display: none; margin-top: 6px;">Venda fiado exige um cliente identificado — selecione um cliente cadastrado.</small>
             </div>
@@ -24,9 +20,10 @@
             <div class="pdv-scan">
                 <label style="display: block; margin-bottom: 10px; font-weight: 500;"><i class="fa-solid fa-barcode"></i> Lançar Produto</label>
                 <div class="item-add-grid" style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <input type="text" class="form-control" placeholder="Código de barras ou nome do produto..." style="flex: 1; min-width: 180px;">
-                    <input type="number" class="form-control" value="1" min="1" style="width: 80px;" title="Quantidade">
-                    <button type="button" class="btn" style="margin-top: 0;">Adicionar</button>
+                    <input type="text" class="form-control" id="pdv-produto-busca" list="pdv-produtos" autocomplete="off" placeholder="Código de barras ou nome do produto..." style="flex: 1; min-width: 180px;">
+                    <datalist id="pdv-produtos"></datalist>
+                    <input type="number" class="form-control" id="pdv-produto-qtd" value="1" min="1" style="width: 80px;" title="Quantidade">
+                    <button type="button" class="btn" id="pdv-adicionar-btn" style="margin-top: 0;">Adicionar</button>
                 </div>
             </div>
 
@@ -43,22 +40,7 @@
                         </tr>
                     </thead>
                     <tbody id="pdv-carrinho">
-                        <tr data-qtd="1" data-preco="159.90">
-                            <td data-label="Produto">Vestido Floral Verão</td>
-                            <td class="mono" data-label="Qtd">1</td>
-                            <td class="mono" data-label="Vlr. Unit.">R$ 159,90</td>
-                            <td data-label="% Desc."><input type="number" class="form-control item-desconto" value="0" min="0" max="100" step="0.01" style="width: 75px; padding: 6px 8px;"></td>
-                            <td class="mono item-subtotal" data-label="Subtotal">R$ 159,90</td>
-                            <td style="text-align: right;"><button type="button" class="btn-icon btn-icon--delete"><i class="fa-solid fa-xmark"></i></button></td>
-                        </tr>
-                        <tr data-qtd="2" data-preco="49.95">
-                            <td data-label="Produto">Cinto Fino Couro</td>
-                            <td class="mono" data-label="Qtd">2</td>
-                            <td class="mono" data-label="Vlr. Unit.">R$ 49,95</td>
-                            <td data-label="% Desc."><input type="number" class="form-control item-desconto" value="0" min="0" max="100" step="0.01" style="width: 75px; padding: 6px 8px;"></td>
-                            <td class="mono item-subtotal" data-label="Subtotal">R$ 99,90</td>
-                            <td style="text-align: right;"><button type="button" class="btn-icon btn-icon--delete"><i class="fa-solid fa-xmark"></i></button></td>
-                        </tr>
+                        <tr class="pdv-vazio"><td colspan="6" class="text-muted">Nenhum produto lançado.</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -71,7 +53,7 @@
         <div style="flex: 1; margin-top: 20px;">
             <div class="pdv-summary-line">
                 <span>Subtotal:</span>
-                <span class="mono-value" id="pdv-subtotal">R$ 259,80</span>
+                <span class="mono-value" id="pdv-subtotal">R$ 0,00</span>
             </div>
 
             <div class="form-group" style="margin-bottom: 12px;">
@@ -85,16 +67,16 @@
             </div>
             <div class="pdv-total-line">
                 <span>Total</span>
-                <span id="pdv-total-valor">R$ 259,80</span>
+                <span id="pdv-total-valor">R$ 0,00</span>
             </div>
 
             <div class="form-group" style="margin-top: 20px;">
                 <label>Forma de Pagamento</label>
                 <select class="form-control" id="pdv-forma-pagamento">
-                    <option>PIX</option>
+                    <option value="PIX">PIX</option>
                     <option value="Cartão de Crédito">Cartão de Crédito</option>
-                    <option>Cartão de Débito</option>
-                    <option>Dinheiro</option>
+                    <option value="Cartão de Débito">Cartão de Débito</option>
+                    <option value="Dinheiro">Dinheiro</option>
                     <option value="Fiado">Fiado (Crediário Próprio)</option>
                 </select>
             </div>
@@ -125,7 +107,8 @@
             </div>
         </div>
 
-        <button type="submit" class="btn" style="width: 100%;"><i class="fa-solid fa-check"></i> Finalizar Venda</button>
+        <p id="pdv-mensagem" class="text-rust" style="display: none; margin-bottom: 10px; font-size: 0.85rem;"></p>
+        <button type="submit" form="pdv-form" class="btn" id="pdv-finalizar-btn" style="width: 100%;"><i class="fa-solid fa-check"></i> Finalizar Venda</button>
     </div>
 
 </div>
@@ -142,24 +125,12 @@
                     <th>Itens</th>
                     <th>Pagamento</th>
                     <th>Total</th>
+                    <th>Status</th>
                     <th>Ações</th>
                 </tr>
             </thead>
-            <tbody>
-                <?php foreach($vendas as $id => $venda): ?>
-                <?php $itens_texto = implode(', ', array_map(fn($i) => "{$i['qtd']}x {$i['produto']}", $venda['itens'])); ?>
-                <tr>
-                    <td class="mono">#<?= $id ?></td>
-                    <td><?= date('d/m/Y H:i', strtotime($venda['data'])) ?></td>
-                    <td><strong><?= $venda['cliente'] ?></strong></td>
-                    <td><small><?= $itens_texto ?></small></td>
-                    <td><span class="badge <?= $venda['pagamento'] === 'Fiado' ? 'badge-warning' : 'badge-info' ?>"><?= $venda['pagamento'] ?></span></td>
-                    <td class="mono"><strong>R$ <?= number_format($venda['total'], 2, ',', '.') ?></strong></td>
-                    <td>
-                        <a class="btn-icon btn-icon--view" title="Imprimir Recibo" href="recibo.php?venda=<?= $id ?>" target="_blank" style="text-decoration: none;"><i class="fa-solid fa-file-invoice"></i></a>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
+            <tbody id="pdv-historico">
+                <tr><td colspan="8" class="text-muted">Carregando...</td></tr>
             </tbody>
         </table>
     </div>

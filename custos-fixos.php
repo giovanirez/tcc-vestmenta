@@ -1,68 +1,62 @@
-<?php include 'includes/header.php'; ?>
+<?php $page_js = 'custos-fixos.js'; include 'includes/header.php'; ?>
 
-<?php
-// Dados Mockados - Custos Fixos
-$custos_fixos = [
-    ['id' => 1, 'nome' => 'Aluguel da Loja',     'categoria' => 'Ocupação',  'valor' => 2800.00, 'vencimento' => 5,  'ativo' => true],
-    ['id' => 2, 'nome' => 'Energia Elétrica',    'categoria' => 'Utilidades', 'valor' => 420.00, 'vencimento' => 10, 'ativo' => true],
-    ['id' => 3, 'nome' => 'Internet e Telefone', 'categoria' => 'Utilidades', 'valor' => 180.00, 'vencimento' => 10, 'ativo' => true],
-    ['id' => 4, 'nome' => 'Salário - Vendedora', 'categoria' => 'Pessoal',   'valor' => 1800.00, 'vencimento' => 5,  'ativo' => true],
-    ['id' => 5, 'nome' => 'Contador',            'categoria' => 'Serviços', 'valor' => 350.00,  'vencimento' => 15, 'ativo' => true],
-];
-
-$total_mensal = array_sum(array_column(array_filter($custos_fixos, fn($c) => $c['ativo']), 'valor'));
-?>
 
 <div class="dashboard-cards">
     <div class="tag-card tag-card--rust">
         <div class="kpi-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
         <div class="kpi-info">
-            <h3>R$ <?= number_format($total_mensal, 2, ',', '.') ?></h3>
+            <h3 id="cf-total-mensal">R$ 0,00</h3>
             <p>Total Fixo Mensal</p>
         </div>
     </div>
     <div class="tag-card tag-card--denim">
         <div class="kpi-icon"><i class="fa-solid fa-list-check"></i></div>
         <div class="kpi-info">
-            <h3><?= count(array_filter($custos_fixos, fn($c) => $c['ativo'])) ?></h3>
+            <h3 id="cf-qtd-ativos">0</h3>
             <p>Custos Ativos</p>
         </div>
     </div>
 </div>
 
 <div class="card">
-    <h2><i class="fa-solid fa-money-bill-transfer"></i> Novo Custo Fixo</h2>
-    <form action="#" method="POST" style="margin-top: 15px;">
+    <h2><i class="fa-solid fa-money-bill-transfer"></i> <span id="cf-form-titulo">Novo Custo Fixo</span></h2>
+    <form id="cf-form" style="margin-top: 15px;">
+        <input type="hidden" id="cf-id" value="">
         <div class="form-grid">
             <div class="form-group">
                 <label>Nome do Custo</label>
-                <input type="text" class="form-control" required placeholder="Ex: Aluguel da Loja">
+                <input type="text" class="form-control" id="cf-nome" required maxlength="120" placeholder="Ex: Aluguel da Loja">
             </div>
             <div class="form-group">
                 <label>Categoria</label>
-                <select class="form-control">
+                <select class="form-control" id="cf-categoria">
                     <option value="">Selecione...</option>
-                    <option>Ocupação</option>
-                    <option>Utilidades</option>
-                    <option>Pessoal</option>
-                    <option>Serviços</option>
-                    <option>Outros</option>
+                    <option value="Ocupação">Ocupação</option>
+                    <option value="Utilidades">Utilidades</option>
+                    <option value="Pessoal">Pessoal</option>
+                    <option value="Serviços">Serviços</option>
+                    <option value="Outros">Outros</option>
                 </select>
             </div>
             <div class="form-group">
                 <label>Valor (R$)</label>
-                <input type="number" step="0.01" class="form-control" required placeholder="0,00">
+                <input type="number" step="0.01" min="0.01" class="form-control" id="cf-valor" required placeholder="0,00">
             </div>
             <div class="form-group">
                 <label>Dia de Vencimento</label>
-                <input type="number" class="form-control" min="1" max="31" required placeholder="Ex: 10">
+                <input type="number" class="form-control" id="cf-dia" min="1" max="31" required placeholder="Ex: 10">
             </div>
             <div class="form-group" style="grid-column: 1 / -1;">
                 <label>Observação</label>
-                <input type="text" class="form-control" placeholder="Opcional">
+                <input type="text" class="form-control" id="cf-observacao" maxlength="255" placeholder="Opcional">
             </div>
         </div>
-        <button type="submit" class="btn"><i class="fa-solid fa-save"></i> Salvar Custo Fixo</button>
+        <p id="cf-mensagem" class="text-rust" style="display: none; margin-top: 10px; font-size: 0.85rem;"></p>
+
+        <div style="display: flex; gap: 10px;">
+            <button type="submit" class="btn" id="cf-submit-btn"><i class="fa-solid fa-save"></i> Salvar Custo Fixo</button>
+            <button type="button" class="btn btn-outline" id="cf-cancelar-btn" style="display: none;">Cancelar edição</button>
+        </div>
     </form>
 </div>
 
@@ -80,20 +74,8 @@ $total_mensal = array_sum(array_column(array_filter($custos_fixos, fn($c) => $c[
                     <th>Ações</th>
                 </tr>
             </thead>
-            <tbody>
-                <?php foreach ($custos_fixos as $c): ?>
-                <tr>
-                    <td><strong><?= $c['nome'] ?></strong></td>
-                    <td><?= $c['categoria'] ?></td>
-                    <td class="mono">R$ <?= number_format($c['valor'], 2, ',', '.') ?></td>
-                    <td class="mono">dia <?= $c['vencimento'] ?></td>
-                    <td><span class="badge <?= $c['ativo'] ? 'badge-success' : 'badge-neutral' ?>"><?= $c['ativo'] ? 'Ativo' : 'Inativo' ?></span></td>
-                    <td>
-                        <button class="btn-icon btn-icon--edit" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
-                        <button class="btn-icon btn-icon--delete" title="Desativar"><i class="fa-solid fa-ban"></i></button>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
+            <tbody id="cf-lista">
+                <tr><td colspan="6" class="text-muted">Carregando...</td></tr>
             </tbody>
         </table>
     </div>

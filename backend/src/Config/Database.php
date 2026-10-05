@@ -34,4 +34,32 @@ class Database
 
         return self::$instancia;
     }
+
+    // Roda $operacao dentro de uma transação: ou tudo grava, ou nada
+    // grava. Usado em operações que mexem em várias tabelas de uma vez
+    // (ex.: entrada + itens + produtos + documento de estoque) — se
+    // qualquer passo falhar no meio, o banco não fica pela metade.
+    //
+    // Se já existe uma transação aberta (ex.: finalizar condicional chama
+    // o VendaService, que também usa transacao()), só roda a operação
+    // dentro dela — o PDO não suporta transação aninhada, e quem abriu a
+    // de fora é quem decide o commit/rollback de tudo.
+    public static function transacao(callable $operacao): mixed
+    {
+        $pdo = self::conexao();
+        if ($pdo->inTransaction()) {
+            return $operacao($pdo);
+        }
+
+        $pdo->beginTransaction();
+
+        try {
+            $resultado = $operacao($pdo);
+            $pdo->commit();
+            return $resultado;
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+    }
 }

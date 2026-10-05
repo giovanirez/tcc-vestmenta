@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
         botao.textContent = "Entrando...";
 
         try {
-            const resposta = await fetch("backend/public/index.php/auth/login", {
+            const resposta = await fetch(ModaSysAuth.url("/auth/login"), {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, senha }),

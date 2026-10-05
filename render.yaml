@@ -1,0 +1,55 @@
+# Blueprint do Render: cria os dois serviços (API e front) de uma vez.
+# Render > New > Blueprint > escolher este repositório.
+#
+# Os dois rodam no plano gratuito, que "dorme" depois de 15 min sem
+# acesso (o primeiro acesso seguinte leva ~30-50 s pra acordar).
+# Região: o Render não tem São Paulo; Virginia (EUA) é a mais próxima
+# do Supabase (sa-east-1).
+services:
+  # Backend (API) — único que acessa o banco
+  - type: web
+    name: modasys-api
+    runtime: docker
+    plan: free
+    region: virginia
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    envVars:
+      # Session pooler do Supabase: o host direto (db.xxx.supabase.co)
+      # só responde em IPv6, e o Render só sai por IPv4.
+      - key: DB_HOST
+        value: aws-0-sa-east-1.pooler.supabase.com
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_NAME
+        value: postgres
+      - key: DB_USER
+        value: backend_role.kvxowfqgyvpwbafpaqli
+      # Senha do backend_role: o Render pede pra digitar ao criar o
+      # Blueprint (nunca fica no repositório).
+      - key: DB_PASSWORD
+        sync: false
+      # Chave dos tokens de login, gerada aleatoriamente pelo Render.
+      - key: JWT_SECRET
+        generateValue: true
+      # CORS: só o front pode chamar a API pelo navegador.
+      - key: FRONTEND_ORIGIN
+        fromService:
+          type: web
+          name: modasys-web
+          property: host
+
+  # Front-end — só páginas e arquivos estáticos, sem acesso ao banco
+  - type: web
+    name: modasys-web
+    runtime: docker
+    plan: free
+    region: virginia
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    envVars:
+      - key: API_URL
+        fromService:
+          type: web
+          name: modasys-api
+          property: host
