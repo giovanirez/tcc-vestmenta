@@ -17,7 +17,7 @@
             <p>Total Atrasado</p>
         </div>
     </div>
-
+ 
     <div class="tag-card tag-card--moss">
         <div class="kpi-icon"><i class="fa-solid fa-sack-dollar"></i></div>
         <div class="kpi-info">
