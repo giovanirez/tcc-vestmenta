@@ -33,13 +33,27 @@ const ModaSysAuth = {
         return (window.MODASYS_API_URL || "backend/public/index.php") + rota;
     },
 
+    // fetch() que troca o "Failed to fetch" do navegador por uma
+    // mensagem que o usuário entende. No plano gratuito do Render a API
+    // "dorme" depois de 15 min parada e leva uns segundos pra acordar —
+    // a primeira requisição pode cair aqui.
+    async buscar(url, opcoes) {
+        try {
+            return await fetch(url, opcoes);
+        } catch (erro) {
+            throw new Error(navigator.onLine
+                ? "Não foi possível falar com o servidor. Ele pode estar iniciando — tente de novo em alguns segundos."
+                : "Sem conexão com a internet.");
+        }
+    },
+
     // Fetch com o token já anexado. Se o backend responder 401 (token
     // ausente/expirado), desloga automaticamente — não deixa a página
     // continuar como se ainda estivesse autenticada.
     async requisitar(caminho, opcoes = {}) {
         const token = this.obterToken();
 
-        const resposta = await fetch(this.url(caminho), {
+        const resposta = await this.buscar(this.url(caminho), {
             ...opcoes,
             headers: {
                 "Content-Type": "application/json",
@@ -159,10 +173,90 @@ const ModaSysModal = {
 
 window.ModaSysModal = ModaSysModal;
 
+// ---- PWA: botão "Instalar app" e aviso de sem conexão ----
+const ModaSysPwa = {
+    eventoInstalacao: null,
+
+    // O navegador só dispara "beforeinstallprompt" quando o app é
+    // instalável (manifest + ícones + service worker) e ainda não foi
+    // instalado. Guardamos o evento pra abrir o pedido de instalação no
+    // clique do botão — o navegador não deixa abrir sem ação do usuário.
+    iniciar() {
+        window.addEventListener("beforeinstallprompt", (evento) => {
+            evento.preventDefault();
+            this.eventoInstalacao = evento;
+            this.mostrarBotaoInstalar();
+        });
+
+        window.addEventListener("appinstalled", () => {
+            this.eventoInstalacao = null;
+            const botao = document.getElementById("botao-instalar");
+            if (botao) botao.remove();
+        });
+
+        window.addEventListener("online", () => this.atualizarAvisoConexao());
+        window.addEventListener("offline", () => this.atualizarAvisoConexao());
+        document.addEventListener("DOMContentLoaded", () => {
+            this.atualizarAvisoConexao();
+            // Caso o evento de instalação tenha chegado antes da topbar existir.
+            if (this.eventoInstalacao) this.mostrarBotaoInstalar();
+        });
+    },
+
+    mostrarBotaoInstalar() {
+        const destino = document.querySelector(".topbar .user-info");
+        if (!destino || document.getElementById("botao-instalar")) return;
+
+        const botao = document.createElement("button");
+        botao.type = "button";
+        botao.id = "botao-instalar";
+        botao.className = "btn-instalar";
+        botao.title = "Instalar o ModaSys como aplicativo";
+        botao.innerHTML = '<i class="fa-solid fa-download"></i> <span>Instalar app</span>';
+        botao.addEventListener("click", async () => {
+            if (!this.eventoInstalacao) return;
+            this.eventoInstalacao.prompt();
+            const { outcome } = await this.eventoInstalacao.userChoice;
+            if (outcome === "accepted") botao.remove();
+            this.eventoInstalacao = null;
+        });
+        destino.prepend(botao);
+    },
+
+    atualizarAvisoConexao() {
+        if (!document.body) return;
+        let aviso = document.getElementById("aviso-offline");
+
+        if (navigator.onLine) {
+            if (aviso) aviso.remove();
+            return;
+        }
+        if (aviso) return;
+
+        aviso = document.createElement("div");
+        aviso.id = "aviso-offline";
+        aviso.className = "aviso-offline";
+        aviso.setAttribute("role", "status");
+        aviso.innerHTML = '<i class="fa-solid fa-wifi"></i> Sem conexão — os dados não podem ser carregados nem salvos até a internet voltar.';
+        document.body.prepend(aviso);
+    },
+};
+
+ModaSysPwa.iniciar();
+
 document.addEventListener("DOMContentLoaded", () => {
     // A tela de login é a única página que não exige token — em
     // qualquer outra, sem token vai direto pro login.
-    const ehPaginaDeLogin = /(^|\/)index\.php$/.test(window.location.pathname);
+    // A raiz do site ("/") também abre o index.php.
+    const ehPaginaDeLogin = /(^|\/)(index\.php)?$/.test(window.location.pathname);
+
+    // Já logado (ex.: abriu o app instalado, que começa no login) vai
+    // direto pro dashboard. Se o token estiver vencido, a primeira
+    // chamada à API devolve 401 e o sair() traz de volta pro login.
+    if (ehPaginaDeLogin && ModaSysAuth.obterToken()) {
+        window.location.replace("dashboard.php");
+        return;
+    }
 
     if (!ehPaginaDeLogin && !ModaSysAuth.obterToken()) {
         window.location.href = "index.php";
