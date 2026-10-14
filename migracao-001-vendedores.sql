@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS vendedores (
     criado_em  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Único sem diferenciar maiúsculas/minúsculas.
+-- Único sem diferenciar maiúsculas/minúsculas. 
 CREATE UNIQUE INDEX IF NOT EXISTS ux_vendedores_nome ON vendedores (lower(nome));
 
 -- Opcional: vendas antigas (e quem não quiser informar) ficam NULL.
