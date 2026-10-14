@@ -74,13 +74,8 @@ class VendaService
                 'valor_total' => $total,
             ]);
 
-            foreach ($itens as $item) {
-                $vendas->adicionarItem($vendaId, $item);
-            }
-
-            foreach ($this->gerarParcelas($total, $qtdParcelas) as $numero => $parcela) {
-                $vendas->adicionarParcela($vendaId, $numero, $parcela['valor'], $parcela['vencimento']);
-            }
+            $vendas->adicionarItens($vendaId, $itens);
+            $vendas->adicionarParcelas($vendaId, $this->gerarParcelas($total, $qtdParcelas));
 
             (new DocumentoRepository())->registrar(
                 'Saída',

@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Config\Database;
+use App\Support\Lote;
 use PDO;
 
 class VendaRepository
@@ -81,22 +82,32 @@ class VendaRepository
         return (int) $consulta->fetchColumn();
     }
 
-    public function adicionarItem(int $vendaId, array $item): void
+    // Todos os itens numa ida só ao banco.
+    public function adicionarItens(int $vendaId, array $itens): void
     {
-        $consulta = $this->pdo->prepare(
-            'INSERT INTO venda_itens (venda_id, produto_id, quantidade, valor_unitario, valor_desconto, valor_total)
-             VALUES (:venda_id, :produto_id, :quantidade, :valor_unitario, :valor_desconto, :valor_total)'
-        );
-        $consulta->execute(['venda_id' => $vendaId] + $item);
+        $linhas = array_map(fn ($item) => ['venda_id' => $vendaId] + $item, $itens);
+        [$valores, $parametros] = Lote::valores($linhas, ['venda_id', 'produto_id', 'quantidade', 'valor_unitario', 'valor_desconto', 'valor_total']);
+
+        $this->pdo->prepare(
+            "INSERT INTO venda_itens (venda_id, produto_id, quantidade, valor_unitario, valor_desconto, valor_total) VALUES {$valores}"
+        )->execute($parametros);
     }
 
-    public function adicionarParcela(int $vendaId, int $numero, float $valor, string $vencimento): void
+    // $parcelas: [numero => ['valor' => float, 'vencimento' => 'Y-m-d']]
+    public function adicionarParcelas(int $vendaId, array $parcelas): void
     {
-        $consulta = $this->pdo->prepare(
-            'INSERT INTO venda_parcelas (venda_id, numero_parcela, valor, data_vencimento)
-             VALUES (:venda_id, :numero, :valor, :vencimento)'
-        );
-        $consulta->execute(['venda_id' => $vendaId, 'numero' => $numero, 'valor' => $valor, 'vencimento' => $vencimento]);
+        if (!$parcelas) {
+            return;
+        }
+        $linhas = [];
+        foreach ($parcelas as $numero => $parcela) {
+            $linhas[] = ['venda_id' => $vendaId, 'numero' => $numero, 'valor' => $parcela['valor'], 'vencimento' => $parcela['vencimento']];
+        }
+        [$valores, $parametros] = Lote::valores($linhas, ['venda_id', 'numero', 'valor', 'vencimento']);
+
+        $this->pdo->prepare(
+            "INSERT INTO venda_parcelas (venda_id, numero_parcela, valor, data_vencimento) VALUES {$valores}"
+        )->execute($parametros);
     }
 
     public function cancelar(int $id): void

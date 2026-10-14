@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Config\Database;
+use App\Support\Lote;
 use PDO;
 
 class ProdutoRepository
@@ -113,6 +114,51 @@ class ProdutoRepository
             $porId[(int) $produto['id']] = $produto;
         }
         return $porId;
+    }
+
+    // Vários produtos por código numa ida só. Devolve [codigo => produto].
+    // $bloquear trava as linhas até o fim da transação (FOR UPDATE).
+    public function buscarPorCodigos(array $codigos, bool $bloquear = false): array
+    {
+        $codigos = array_values(array_unique($codigos));
+        if (!$codigos) {
+            return [];
+        }
+        $marcadores = implode(',', array_fill(0, count($codigos), '?'));
+        $consulta = $this->pdo->prepare(
+            "SELECT * FROM produtos WHERE codigo_interno IN ({$marcadores})" . ($bloquear ? ' FOR UPDATE' : '')
+        );
+        $consulta->execute($codigos);
+
+        $porCodigo = [];
+        foreach ($consulta->fetchAll() as $produto) {
+            $porCodigo[$produto['codigo_interno']] = $produto;
+        }
+        return $porCodigo;
+    }
+
+    // Cadastra vários produtos novos numa ida só (usado pela entrada).
+    // Devolve [codigo => produto criado].
+    public function criarVarios(array $produtos): array
+    {
+        if (!$produtos) {
+            return [];
+        }
+        $colunas = ['codigo_interno', 'nome', 'categoria_id', 'fornecedor_id', 'preco_custo', 'preco_venda'];
+        [$valores, $parametros] = Lote::valores($produtos, $colunas);
+
+        $consulta = $this->pdo->prepare(
+            "INSERT INTO produtos (codigo_interno, nome, categoria_id, fornecedor_id, preco_custo, preco_venda)
+             VALUES {$valores}
+             RETURNING *"
+        );
+        $consulta->execute($parametros);
+
+        $porCodigo = [];
+        foreach ($consulta->fetchAll() as $produto) {
+            $porCodigo[$produto['codigo_interno']] = $produto;
+        }
+        return $porCodigo;
     }
 
     public function buscarPorCodigo(string $codigo): ?array

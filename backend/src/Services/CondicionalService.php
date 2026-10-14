@@ -57,9 +57,7 @@ class CondicionalService
 
             $condicionais = new CondicionalRepository();
             $id = $condicionais->criar($clienteId, $dataSaida);
-            foreach ($itens as $produtoId => $quantidade) {
-                $condicionais->adicionarItem($id, $produtoId, $quantidade);
-            }
+            $condicionais->adicionarItens($id, $itens);
 
             (new DocumentoRepository())->registrar('Saída', 'Condicional', $id, $dataSaida, $this->paraDocumento($itens));
 

@@ -29,6 +29,10 @@ services:
       # Blueprint (nunca fica no repositório).
       - key: DB_PASSWORD
         sync: false
+      # Reaproveita a conexão com o banco entre requisições (o Dockerfile
+      # limita o Apache a 6 processos = no máximo 6 conexões).
+      - key: DB_PERSISTENTE
+        value: "1"
       # Chave dos tokens de login, gerada aleatoriamente pelo Render.
       - key: JWT_SECRET
         generateValue: true

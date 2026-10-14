@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Config\Database;
+use App\Support\Lote;
 use PDO;
 
 class CondicionalRepository
@@ -69,13 +70,18 @@ class CondicionalRepository
         return (int) $consulta->fetchColumn();
     }
 
-    public function adicionarItem(int $condicionalId, int $produtoId, int $quantidade): void
+    // $itens: [produto_id => quantidade] — todos numa ida só.
+    public function adicionarItens(int $condicionalId, array $itens): void
     {
-        $consulta = $this->pdo->prepare(
-            'INSERT INTO condicional_itens (condicional_id, produto_id, quantidade)
-             VALUES (:condicional_id, :produto_id, :quantidade)'
-        );
-        $consulta->execute(['condicional_id' => $condicionalId, 'produto_id' => $produtoId, 'quantidade' => $quantidade]);
+        $linhas = [];
+        foreach ($itens as $produtoId => $quantidade) {
+            $linhas[] = ['condicional_id' => $condicionalId, 'produto_id' => $produtoId, 'quantidade' => $quantidade];
+        }
+        [$valores, $parametros] = Lote::valores($linhas, ['condicional_id', 'produto_id', 'quantidade']);
+
+        $this->pdo->prepare(
+            "INSERT INTO condicional_itens (condicional_id, produto_id, quantidade) VALUES {$valores}"
+        )->execute($parametros);
     }
 
     public function concluir(int $id, string $status, string $data): void

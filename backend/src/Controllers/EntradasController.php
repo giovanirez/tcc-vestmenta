@@ -62,38 +62,65 @@ class EntradasController
             $entradas = new EntradaRepository();
             $fornecedorId = (int) $dados['fornecedor_id'];
 
-            $itensResolvidos = [];
-            $valorProdutos = 0.0;
+            // Tudo em lote, pra não ir ao banco uma vez por item (a API fica
+            // longe do banco): uma busca pra todos os códigos, um INSERT pra
+            // todos os produtos novos, um pros itens e um pro kardex.
+            $existentes = $produtos->buscarPorCodigos(array_map(fn ($item) => trim($item['codigo']), $itens), true);
+
+            // Produtos novos: o mesmo código novo pode aparecer em duas
+            // linhas — cadastra uma vez só, com os dados da primeira.
+            $novos = [];
+            // Existentes: o que a entrada quer no cadastro (a última linha
+            // daquele código vale).
+            $mudancasCadastro = [];
 
             foreach ($itens as $item) {
                 $codigo = trim($item['codigo']);
-                $quantidade = (int) $item['quantidade'];
-                $custo = round((float) $item['custo_unitario'], 2);
                 $precoVenda = $this->numeroOuNulo($item['preco_venda'] ?? null);
 
-                $produto = $produtos->buscarPorCodigo($codigo);
-                if ($produto) {
+                if (isset($existentes[$codigo])) {
+                    $mudancasCadastro[$codigo] = $item;
+                } elseif (!isset($novos[$codigo])) {
                     $categoria = $item['categoria_id'] ?? null;
-                    $produtos->atualizarCadastroPelaEntrada(
-                        (int) $produto['id'],
-                        $this->textoOuNulo($item['nome'] ?? null),
-                        array_key_exists('categoria_id', $item),
-                        $categoria !== null && $categoria !== '' ? (int) $categoria : null,
-                        $precoVenda
-                    );
-                } else {
-                    $produto = $produtos->criar([
+                    $novos[$codigo] = [
                         'codigo_interno' => $codigo,
                         'nome' => trim($item['nome']),
-                        'descricao' => null,
-                        'categoria_id' => $item['categoria_id'] ?? null,
+                        'categoria_id' => $categoria !== null && $categoria !== '' ? (int) $categoria : null,
                         'fornecedor_id' => $fornecedorId,
-                        'preco_custo' => $custo,
+                        'preco_custo' => round((float) $item['custo_unitario'], 2),
                         'preco_venda' => $precoVenda ?? 0,
-                    ]);
+                    ];
                 }
+            }
 
-                $itensResolvidos[] = ['produto_id' => (int) $produto['id'], 'quantidade' => $quantidade, 'custo' => $custo];
+            $todos = $existentes + $produtos->criarVarios(array_values($novos));
+
+            // Só vai ao banco se o cadastro realmente mudou (o normal é não
+            // mudar nada — a tela só manda valores diferentes quando a
+            // pessoa editou e confirmou o aviso).
+            foreach ($mudancasCadastro as $codigo => $item) {
+                $atual = $existentes[$codigo];
+                $nome = $this->textoOuNulo($item['nome'] ?? null);
+                $precoVenda = $this->numeroOuNulo($item['preco_venda'] ?? null);
+                $mudarCategoria = array_key_exists('categoria_id', $item);
+                $categoria = $item['categoria_id'] ?? null;
+                $categoria = $categoria !== null && $categoria !== '' ? (int) $categoria : null;
+
+                $mudou = ($nome !== null && $nome !== $atual['nome'])
+                    || ($mudarCategoria && $categoria !== ($atual['categoria_id'] === null ? null : (int) $atual['categoria_id']))
+                    || ($precoVenda !== null && round($precoVenda, 2) !== round((float) $atual['preco_venda'], 2));
+
+                if ($mudou) {
+                    $produtos->atualizarCadastroPelaEntrada((int) $atual['id'], $nome, $mudarCategoria, $categoria, $precoVenda);
+                }
+            }
+
+            $itensResolvidos = [];
+            $valorProdutos = 0.0;
+            foreach ($itens as $item) {
+                $quantidade = (int) $item['quantidade'];
+                $custo = round((float) $item['custo_unitario'], 2);
+                $itensResolvidos[] = ['produto_id' => (int) $todos[trim($item['codigo'])]['id'], 'quantidade' => $quantidade, 'custo' => $custo];
                 $valorProdutos += $quantidade * $custo;
             }
 
@@ -128,9 +155,7 @@ class EntradasController
                 'informacoes_complementares' => $this->textoOuNulo($dados['informacoes_complementares'] ?? null),
             ] + $valores);
 
-            foreach ($itensResolvidos as $item) {
-                $entradas->adicionarItem($entradaId, $item['produto_id'], $item['quantidade'], $item['custo']);
-            }
+            $entradas->adicionarItens($entradaId, $itensResolvidos);
 
             (new DocumentoRepository())->registrar('Entrada', 'Compra', $entradaId, $dados['data_entrada'], $itensResolvidos);
 
@@ -165,7 +190,10 @@ class EntradasController
             return $erros;
         }
 
-        $produtos = new ProdutoRepository();
+        // Uma consulta só pra saber quais códigos já existem.
+        $existentes = (new ProdutoRepository())->buscarPorCodigos(
+            array_filter(array_map(fn ($item) => trim((string) ($item['codigo'] ?? '')), $itens))
+        );
         foreach ($itens as $posicao => $item) {
             $linha = $posicao + 1;
             $codigo = trim((string) ($item['codigo'] ?? ''));
@@ -182,7 +210,7 @@ class EntradasController
             }
             // Nome só é exigido se o produto ainda não existe — é com ele
             // que o cadastro automático vai ser feito.
-            if (trim((string) ($item['nome'] ?? '')) === '' && !$produtos->buscarPorCodigo($codigo)) {
+            if (trim((string) ($item['nome'] ?? '')) === '' && !isset($existentes[$codigo])) {
                 $erros[] = "Item {$linha}: produto novo precisa de descrição.";
             }
         }

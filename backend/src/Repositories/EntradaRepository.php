@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Config\Database;
+use App\Support\Lote;
 use PDO;
 
 class EntradaRepository
@@ -75,18 +76,20 @@ class EntradaRepository
         return (int) $consulta->fetchColumn();
     }
 
-    public function adicionarItem(int $entradaId, int $produtoId, int $quantidade, float $custoUnitario): void
+    // $itens: [{produto_id, quantidade, custo}] — todos numa ida só.
+    public function adicionarItens(int $entradaId, array $itens): void
     {
-        $consulta = $this->pdo->prepare(
-            'INSERT INTO entrada_itens (entrada_id, produto_id, quantidade, custo_unitario, valor_total)
-             VALUES (:entrada_id, :produto_id, :quantidade, :custo_unitario, :valor_total)'
-        );
-        $consulta->execute([
+        $linhas = array_map(fn ($item) => [
             'entrada_id' => $entradaId,
-            'produto_id' => $produtoId,
-            'quantidade' => $quantidade,
-            'custo_unitario' => $custoUnitario,
-            'valor_total' => round($quantidade * $custoUnitario, 2),
-        ]);
+            'produto_id' => $item['produto_id'],
+            'quantidade' => $item['quantidade'],
+            'custo_unitario' => $item['custo'],
+            'valor_total' => round($item['quantidade'] * $item['custo'], 2),
+        ], $itens);
+        [$valores, $parametros] = Lote::valores($linhas, ['entrada_id', 'produto_id', 'quantidade', 'custo_unitario', 'valor_total']);
+
+        $this->pdo->prepare(
+            "INSERT INTO entrada_itens (entrada_id, produto_id, quantidade, custo_unitario, valor_total) VALUES {$valores}"
+        )->execute($parametros);
     }
 }
