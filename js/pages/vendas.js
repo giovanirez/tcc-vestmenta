@@ -5,6 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const formaPagamento = document.getElementById("pdv-forma-pagamento");
     const cliente = document.getElementById("pdv-cliente");
+    const vendedor = document.getElementById("pdv-vendedor");
     const clienteAviso = document.getElementById("pdv-cliente-aviso");
     const fiadoDetalhes = document.getElementById("pdv-fiado-detalhes");
     const parcelasSelect = document.getElementById("pdv-parcelas");
@@ -215,28 +216,14 @@ document.addEventListener("DOMContentLoaded", () => {
         fiadoDetalhes.style.display = fiado ? "block" : "none";
         cartaoDetalhes.style.display = formaPagamento.value === "Cartão de Crédito" ? "block" : "none";
 
-        const clienteBalcao = cliente.querySelector('option[value="balcao"]');
-        if (fiado) {
-            clienteBalcao.disabled = true;
-            if (cliente.value === "balcao") {
-                cliente.value = "";
-                clienteAviso.style.display = "block";
-            }
-            atualizarPreviewParcelas();
-        } else {
-            clienteBalcao.disabled = false;
-            clienteAviso.style.display = "none";
-            if (!cliente.value) cliente.value = "balcao";
-        }
+        if (fiado) atualizarPreviewParcelas();
     }
 
     formaPagamento.addEventListener("change", atualizarEstadoFormaPagamento);
     parcelasSelect.addEventListener("change", atualizarPreviewParcelas);
     cliente.addEventListener("change", () => {
-        if (ehFiado()) {
-            if (cliente.value && cliente.value !== "balcao") clienteAviso.style.display = "none";
-            atualizarPreviewParcelas();
-        }
+        if (cliente.value) clienteAviso.style.display = "none";
+        if (ehFiado()) atualizarPreviewParcelas();
     });
 
     // ---- Finalizar venda ----
@@ -244,9 +231,11 @@ document.addEventListener("DOMContentLoaded", () => {
         evento.preventDefault();
 
         if (!carrinho.length) return mostrarMensagem("Adicione pelo menos um produto à venda.");
-        if (ehFiado() && (!cliente.value || cliente.value === "balcao")) {
+        // Toda venda tem cliente identificado (o backend também exige).
+        if (!cliente.value) {
             clienteAviso.style.display = "block";
-            return mostrarMensagem("Venda fiado exige um cliente identificado.");
+            cliente.focus();
+            return mostrarMensagem("Selecione o cliente da venda.");
         }
         mostrarMensagem("");
 
@@ -257,12 +246,13 @@ document.addEventListener("DOMContentLoaded", () => {
         );
         if (!confirmado) return;
 
-        finalizarBtn.disabled = true;
+        const pararCarregando = ModaSysCarregando.botao(finalizarBtn);
         try {
             const resposta = await ModaSysAuth.requisitar(`/vendas`, {
                 method: "POST",
                 body: JSON.stringify({
-                    cliente_id: cliente.value === "balcao" ? null : cliente.value,
+                    cliente_id: cliente.value,
+                    vendedor_id: vendedor.value || null,
                     forma_pagamento: formaPagamento.value,
                     parcelas_cartao: parcelasCartao.value,
                     parcelas: parcelasSelect.value,
@@ -277,9 +267,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const venda = await resposta.json();
             if (!resposta.ok) throw new Error(venda.erro || "Não foi possível finalizar a venda.");
 
+            // O vendedor continua selecionado: normalmente é a mesma pessoa
+            // atendendo a próxima venda.
             carrinho = [];
             descontoGeral.value = 0;
-            cliente.value = "balcao";
+            cliente.value = "";
             formaPagamento.value = "PIX";
             atualizarEstadoFormaPagamento();
             renderizarCarrinho();
@@ -288,14 +280,14 @@ document.addEventListener("DOMContentLoaded", () => {
             // não conta mais como clique do usuário e o navegador bloqueia
             // como pop-up. Mostra o link pra quem quiser imprimir.
             mensagemEl.className = "text-moss";
-            mensagemEl.innerHTML = `Venda #${venda.id} finalizada. <a href="recibo.php?venda=${venda.id}" target="_blank">Imprimir recibo</a>`;
+            mensagemEl.innerHTML = `Venda #${venda.id} finalizada. <a href="recibo.php?venda=${venda.id}">Imprimir recibo</a>`;
             mensagemEl.style.display = "block";
             // Estoque mudou — recarrega pra próxima venda já ver o saldo novo.
             await Promise.all([carregarProdutos(), carregarHistorico()]);
         } catch (erro) {
             mostrarMensagem(erro.message);
         } finally {
-            finalizarBtn.disabled = false;
+            pararCarregando();
         }
     });
 
@@ -307,13 +299,13 @@ document.addEventListener("DOMContentLoaded", () => {
             <tr data-id="${v.id}" ${cancelada ? 'style="opacity: 0.6;"' : ""}>
                 <td class="mono">#${v.id}</td>
                 <td>${new Date(v.data_venda).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</td>
-                <td><strong>${escapar(v.cliente_nome || "Cliente Balcão")}</strong></td>
+                <td><strong>${escapar(v.cliente_nome || "Cliente Balcão")}</strong>${v.vendedor_nome ? `<br><small class="text-muted"><i class="fa-solid fa-user-tag"></i> ${escapar(v.vendedor_nome)}</small>` : ""}</td>
                 <td><small>${escapar(v.itens_resumo || "")}</small></td>
                 <td><span class="badge ${v.forma_pagamento === "Fiado" ? "badge-warning" : "badge-info"}">${escapar(pagamento)}</span></td>
                 <td class="mono"><strong>${paraReais(v.valor_total)}</strong></td>
                 <td><span class="badge ${cancelada ? "badge-neutral" : "badge-success"}">${v.status}</span></td>
                 <td>
-                    <a class="btn-icon btn-icon--view" title="Imprimir Recibo" href="recibo.php?venda=${v.id}" target="_blank" style="text-decoration: none;"><i class="fa-solid fa-file-invoice"></i></a>
+                    <a class="btn-icon btn-icon--view" title="Imprimir Recibo" href="recibo.php?venda=${v.id}" style="text-decoration: none;"><i class="fa-solid fa-file-invoice"></i></a>
                     ${ehAdmin && !cancelada ? '<button type="button" class="btn-icon btn-icon--delete" data-acao="cancelar" title="Cancelar venda"><i class="fa-solid fa-ban"></i></button>' : ""}
                 </td>
             </tr>`;
@@ -330,6 +322,7 @@ document.addEventListener("DOMContentLoaded", () => {
         );
         if (!confirmado) return;
 
+        const pararCarregando = ModaSysCarregando.botao(botao, "");
         try {
             const resposta = await ModaSysAuth.requisitar(`/vendas/${id}/cancelar`, { method: "PATCH" });
             const dados = await resposta.json();
@@ -337,6 +330,8 @@ document.addEventListener("DOMContentLoaded", () => {
             await Promise.all([carregarProdutos(), carregarHistorico()]);
         } catch (erro) {
             alert(erro.message);
+        } finally {
+            pararCarregando();
         }
     });
 
@@ -371,6 +366,12 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    async function carregarVendedores() {
+        (await buscar("vendedores")).forEach(v => ModaSysSelectComNovo.adicionarOpcao(vendedor, v));
+    }
+
+    ModaSysSelectComNovo.ligar(vendedor, { rota: "/vendedores", rotulo: "vendedor", tamanhoMaximo: 80 });
+
     async function carregarHistorico() {
         try {
             const vendas = await buscar("vendas");
@@ -382,7 +383,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    Promise.all([carregarProdutos(), carregarClientes()]).catch(erro => mostrarMensagem(erro.message));
+    Promise.all([carregarProdutos(), carregarClientes(), carregarVendedores()]).catch(erro => mostrarMensagem(erro.message));
     carregarHistorico();
     renderizarCarrinho();
 });

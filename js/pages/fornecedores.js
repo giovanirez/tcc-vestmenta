@@ -196,6 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
             uf: uf.value,
         };
 
+        const pararCarregando = ModaSysCarregando.botao(form.querySelector('[type="submit"]'), "Salvando...");
         try {
             const resposta = await ModaSysAuth.requisitar(
                 emEdicao
@@ -211,6 +212,8 @@ document.addEventListener("DOMContentLoaded", () => {
             await carregarLista();
         } catch (erro) {
             mostrarErro(erro.message);
+        } finally {
+            pararCarregando();
         }
     });
 
@@ -237,11 +240,14 @@ document.addEventListener("DOMContentLoaded", () => {
             );
             if (!confirmado) return;
 
+            const pararCarregando = ModaSysCarregando.botao(botao, "");
             try {
                 await ModaSysAuth.requisitar(`/fornecedores/${id}/ativo`, { method: "PATCH" });
                 await carregarLista();
             } catch (erro) {
                 alert(erro.message);
+            } finally {
+                pararCarregando();
             }
         }
     });

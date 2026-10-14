@@ -36,7 +36,11 @@ $rotas->put('/usuarios/{id}', [\App\Controllers\UsuariosController::class, 'atua
 $rotas->patch('/usuarios/{id}/senha', [\App\Controllers\UsuariosController::class, 'redefinirSenha']);
 $rotas->patch('/usuarios/{id}/ativo', [\App\Controllers\UsuariosController::class, 'alternarAtivo']);
 
+$rotas->get('/vendedores', [\App\Controllers\VendedoresController::class, 'listar']);
+$rotas->post('/vendedores', [\App\Controllers\VendedoresController::class, 'criar']);
+
 $rotas->get('/categorias', [\App\Controllers\CategoriasController::class, 'listar']);
+$rotas->post('/categorias', [\App\Controllers\CategoriasController::class, 'criar']);
 
 $rotas->get('/fornecedores', [\App\Controllers\FornecedoresController::class, 'listar']);
 $rotas->post('/fornecedores', [\App\Controllers\FornecedoresController::class, 'criar']);

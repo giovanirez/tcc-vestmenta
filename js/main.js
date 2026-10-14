@@ -173,6 +173,144 @@ const ModaSysModal = {
 
 window.ModaSysModal = ModaSysModal;
 
+// ---- Botão "carregando": trava o botão e mostra um spinner enquanto a
+// API responde. Evita clique duplo (ex.: duas entradas iguais) e deixa
+// claro que algo está acontecendo — no plano gratuito do Render a
+// primeira requisição depois de um tempo parado pode levar vários
+// segundos. Devolve a função que restaura o botão.
+const ModaSysCarregando = {
+    botao(botao, texto = "Processando...") {
+        if (!botao) return () => {};
+        const original = botao.innerHTML;
+        botao.disabled = true;
+        botao.setAttribute("aria-busy", "true");
+        botao.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>${texto ? " " + texto : ""}`;
+        return () => {
+            botao.disabled = false;
+            botao.removeAttribute("aria-busy");
+            botao.innerHTML = original;
+        };
+    },
+};
+
+window.ModaSysCarregando = ModaSysCarregando;
+
+// ---- Select com botão "+" pra cadastrar um item novo na hora ----
+// Usado na categoria do produto (produtos.php, entradas.php) e no
+// vendedor da venda (vendas.php). O select lista só o que já está em uso
+// (GET da rota); o "+" troca o select por um campo de texto, cria o item
+// (POST na rota — se o nome já existir, o backend devolve o existente) e
+// já deixa ele selecionado.
+//
+// opcoes: { rota: "/categorias", rotulo: "categoria", tamanhoMaximo: 60,
+//           aoCriar(item) — opcional, avisa a página do item novo }
+const ModaSysSelectComNovo = {
+    ligar(select, opcoes) {
+        if (!select || select.dataset.selectComNovo) return;
+        select.dataset.selectComNovo = "1";
+        const { rota, rotulo, tamanhoMaximo = 60, aoCriar } = opcoes;
+
+        const linha = document.createElement("div");
+        linha.className = "campo-com-acao";
+        select.parentNode.insertBefore(linha, select);
+        linha.appendChild(select);
+
+        const botaoNovo = document.createElement("button");
+        botaoNovo.type = "button";
+        botaoNovo.className = "btn-acao-campo";
+        botaoNovo.title = `Adicionar ${rotulo}`;
+        botaoNovo.innerHTML = '<i class="fa-solid fa-plus"></i>';
+        linha.appendChild(botaoNovo);
+
+        const editor = document.createElement("div");
+        editor.className = "campo-com-acao";
+        editor.style.display = "none";
+        editor.innerHTML = `
+            <input type="text" class="form-control" maxlength="${tamanhoMaximo}" placeholder="Nome (${rotulo})">
+            <button type="button" class="btn-acao-campo btn-acao-campo--ok" title="Adicionar ${rotulo}"><i class="fa-solid fa-check"></i></button>
+            <button type="button" class="btn-acao-campo" title="Cancelar"><i class="fa-solid fa-xmark"></i></button>`;
+        linha.parentNode.insertBefore(editor, linha.nextSibling);
+
+        const campo = editor.querySelector("input");
+        const [botaoOk, botaoCancelar] = editor.querySelectorAll("button");
+
+        function abrir() {
+            linha.style.display = "none";
+            editor.style.display = "flex";
+            campo.value = "";
+            campo.focus();
+        }
+
+        function fechar() {
+            editor.style.display = "none";
+            linha.style.display = "flex";
+        }
+
+        async function criar() {
+            const nome = campo.value.trim();
+            if (!nome) {
+                campo.focus();
+                return;
+            }
+
+            const pararCarregando = ModaSysCarregando.botao(botaoOk, "");
+            try {
+                const resposta = await ModaSysAuth.requisitar(rota, {
+                    method: "POST",
+                    body: JSON.stringify({ nome }),
+                });
+                const item = await resposta.json();
+                if (!resposta.ok) throw new Error(item.erro || `Não foi possível adicionar ${rotulo}.`);
+
+                ModaSysSelectComNovo.adicionarOpcao(select, item);
+                select.value = String(item.id);
+                select.dispatchEvent(new Event("change", { bubbles: true }));
+                if (aoCriar) aoCriar(item);
+                fechar();
+            } catch (erro) {
+                alert(erro.message);
+            } finally {
+                pararCarregando();
+            }
+        }
+
+        botaoNovo.addEventListener("click", abrir);
+        botaoCancelar.addEventListener("click", fechar);
+        botaoOk.addEventListener("click", criar);
+        // Enter cria (sem enviar o formulário inteiro); Esc cancela.
+        campo.addEventListener("keydown", (evento) => {
+            if (evento.key === "Enter") {
+                evento.preventDefault();
+                evento.stopPropagation();
+                criar();
+            } else if (evento.key === "Escape") {
+                fechar();
+            }
+        });
+
+        // Quando a página trava o select (ex.: em entradas, produto que já
+        // existe não muda de categoria), o "+" trava junto.
+        const sincronizar = () => {
+            botaoNovo.disabled = select.disabled;
+            if (select.disabled) fechar();
+        };
+        new MutationObserver(sincronizar).observe(select, { attributes: true, attributeFilter: ["disabled"] });
+        sincronizar();
+    },
+
+    // Insere a opção em ordem alfabética, sem duplicar.
+    adicionarOpcao(select, item) {
+        const id = String(item.id);
+        if ([...select.options].some(o => o.value === id)) return;
+
+        const opcao = new Option(item.nome, id);
+        const depois = [...select.options].find(o => o.value && o.text.localeCompare(item.nome, "pt-BR") > 0);
+        select.add(opcao, depois || null);
+    },
+};
+
+window.ModaSysSelectComNovo = ModaSysSelectComNovo;
+
 // ---- PWA: botão "Instalar app" e aviso de sem conexão ----
 const ModaSysPwa = {
     eventoInstalacao: null,

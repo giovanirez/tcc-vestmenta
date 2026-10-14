@@ -90,9 +90,11 @@ document.addEventListener("DOMContentLoaded", () => {
         fornecedorIe.value = f ? (f.inscricao_estadual || "") : "";
     });
 
-    // ---- Código do item: se já existe no catálogo, puxa os dados dele.
-    // Descrição e categoria ficam travadas porque a entrada não altera
-    // o cadastro de um produto existente — só custo, preço e estoque. ----
+    // ---- Código do item: se já existe no catálogo, puxa os dados dele
+    // pra edição. Descrição, categoria e preço de venda editados aqui
+    // atualizam o CADASTRO do produto (valem pras peças que já estavam
+    // no estoque também — por isso o aviso). O custo é diferente: vale só
+    // pras peças desta entrada e fica registrado nela. ----
     function produtoPorCodigo(codigo) {
         const alvo = codigo.trim().toLowerCase();
         return produtosCache.find(p => p.codigo_interno.toLowerCase() === alvo);
@@ -100,15 +102,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     itemCodigo.addEventListener("change", () => {
         const produto = produtoPorCodigo(itemCodigo.value);
-        itemDescricao.disabled = !!produto;
-        itemCategoria.disabled = !!produto;
-
         if (!produto) return;
 
         itemCodigo.value = produto.codigo_interno;
         itemDescricao.value = produto.nome;
         itemCategoria.value = produto.categoria_id || "";
-        custo.value = Number(produto.preco_custo) > 0 ? produto.preco_custo : "";
+        // Sugere o custo da última compra; quem digita confirma ou troca.
+        custo.value = Number(produto.ultimo_custo) > 0 ? produto.ultimo_custo : "";
         venda.value = Number(produto.preco_venda) > 0 ? produto.preco_venda : "";
         lucro.value = "";
         lucroPelaVenda();
@@ -118,35 +118,73 @@ document.addEventListener("DOMContentLoaded", () => {
         [itemCodigo, itemDescricao, custo, lucro, venda].forEach(campo => { campo.value = ""; });
         itemCategoria.value = "";
         itemQtd.value = 1;
-        itemDescricao.disabled = false;
-        itemCategoria.disabled = false;
         itemCodigo.focus();
     }
 
-    adicionarBtn.addEventListener("click", () => {
+    function nomeCategoria(id) {
+        const categoria = categoriasCache.find(c => String(c.id) === String(id));
+        return categoria ? categoria.nome : null;
+    }
+
+    // O que muda no cadastro do produto existente, em texto pro aviso.
+    function mudancasNoCadastro(existente, nome, categoriaId, precoVenda) {
+        const mudancas = [];
+        if (nome !== existente.nome) {
+            mudancas.push(`• Descrição: "${existente.nome}" → "${nome}"`);
+        }
+        if (String(categoriaId || "") !== String(existente.categoria_id || "")) {
+            mudancas.push(`• Categoria: ${existente.categoria_nome || "sem categoria"} → ${nomeCategoria(categoriaId) || "sem categoria"}`);
+        }
+        if (precoVenda !== null && Math.round(precoVenda * 100) !== Math.round(Number(existente.preco_venda) * 100)) {
+            mudancas.push(`• Preço de venda: ${formatarPreco(existente.preco_venda)} → ${formatarPreco(precoVenda)}`);
+        }
+        return mudancas;
+    }
+
+    adicionarBtn.addEventListener("click", async () => {
         const codigo = itemCodigo.value.trim();
+        const nome = itemDescricao.value.trim();
         const quantidade = parseInt(itemQtd.value, 10);
         const custoVal = parseFloat(custo.value);
         const vendaVal = parseFloat(venda.value);
+        const precoVenda = isNaN(vendaVal) ? null : vendaVal;
+        const categoriaId = itemCategoria.value || null;
         const existente = produtoPorCodigo(codigo);
 
         if (!codigo) return mostrarMensagem("Informe o código do item.");
-        if (!existente && !itemDescricao.value.trim()) return mostrarMensagem("Produto novo precisa de descrição.");
+        if (!nome) return mostrarMensagem("Informe a descrição do produto.");
         if (!(quantidade >= 1)) return mostrarMensagem("Quantidade precisa ser pelo menos 1.");
         if (isNaN(custoVal) || custoVal < 0) return mostrarMensagem("Informe o custo unitário.");
         mostrarMensagem("");
 
-        const categoria = categoriasCache.find(c => String(c.id) === itemCategoria.value);
+        let atualizaCadastro = false;
+        if (existente) {
+            const mudancas = mudancasNoCadastro(existente, nome, categoriaId, precoVenda);
+            atualizaCadastro = mudancas.length > 0;
+
+            // Só pergunta se há peças antigas que vão mudar junto.
+            if (atualizaCadastro && existente.estoque_atual > 0) {
+                const confirmado = await ModaSysModal.confirmar(
+                    `O código ${existente.codigo_interno} já tem ${existente.estoque_atual} un. em estoque. ` +
+                    "Ao processar esta entrada, o cadastro muda para TODAS as peças, inclusive as que já estavam:\n\n" +
+                    mudancas.join("\n") +
+                    `\n\nO custo informado (${formatarPreco(custoVal)}) vale só para as ${quantidade} un. desta entrada.`,
+                    { textoConfirmar: "Atualizar e adicionar", textoCancelar: "Voltar e revisar" }
+                );
+                if (!confirmado) return;
+            }
+        }
 
         itens.push({
             codigo: existente ? existente.codigo_interno : codigo,
-            nome: existente ? existente.nome : itemDescricao.value.trim(),
-            categoria_id: existente ? existente.categoria_id : (itemCategoria.value || null),
-            categoria_nome: existente ? existente.categoria_nome : (categoria ? categoria.nome : null),
+            nome,
+            categoria_id: categoriaId,
+            categoria_nome: nomeCategoria(categoriaId),
             quantidade,
             custo_unitario: custoVal,
-            preco_venda: isNaN(vendaVal) ? null : vendaVal,
+            preco_venda: precoVenda,
             novo: !existente,
+            atualiza_cadastro: atualizaCadastro,
         });
 
         renderizarItens();
@@ -172,7 +210,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     : "—";
                 return `
                 <tr>
-                    <td class="mono" data-label="Código">${escapar(item.codigo)}${item.novo ? ' <span class="badge badge-warning">Novo</span>' : ""}</td>
+                    <td class="mono" data-label="Código">${escapar(item.codigo)}${item.novo ? ' <span class="badge badge-warning">Novo</span>' : ""}${item.atualiza_cadastro ? ' <span class="badge badge-info" title="Descrição, categoria ou preço de venda vão mudar no cadastro">Atualiza cadastro</span>' : ""}</td>
                     <td data-label="Descrição">${escapar(item.nome)}</td>
                     <td data-label="Categoria">${escapar(item.categoria_nome || "—")}</td>
                     <td class="mono" data-label="Qtd.">${item.quantidade}</td>
@@ -243,7 +281,7 @@ document.addEventListener("DOMContentLoaded", () => {
         };
         camposTotais.forEach(campo => { corpo[campo.dataset.total] = valorCampo(campo.dataset.total); });
 
-        submitBtn.disabled = true;
+        const pararCarregando = ModaSysCarregando.botao(submitBtn);
         try {
             const resposta = await ModaSysAuth.requisitar(`/entradas`, {
                 method: "POST",
@@ -264,7 +302,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (erro) {
             mostrarMensagem(erro.message);
         } finally {
-            submitBtn.disabled = false;
+            pararCarregando();
         }
     });
 
@@ -285,6 +323,15 @@ document.addEventListener("DOMContentLoaded", () => {
             fornecedor.appendChild(opcao);
         });
     }
+
+    // Categoria criada pelo "+" entra na lista local, pra o nome dela
+    // aparecer na tabela de itens.
+    ModaSysSelectComNovo.ligar(itemCategoria, {
+        rota: "/categorias",
+        rotulo: "categoria",
+        tamanhoMaximo: 60,
+        aoCriar: (categoria) => categoriasCache.push(categoria),
+    });
 
     async function carregarCategorias() {
         categoriasCache = await buscar("categorias");

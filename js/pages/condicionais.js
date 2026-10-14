@@ -130,7 +130,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!pecas.length) return mostrar(mensagemEl, "Adicione pelo menos uma peça.");
         mostrar(mensagemEl, "");
 
-        submitBtn.disabled = true;
+        const pararCarregando = ModaSysCarregando.botao(submitBtn);
         try {
             const nova = await requisitarJson("condicionais", {
                 method: "POST",
@@ -147,7 +147,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (erro) {
             mostrar(mensagemEl, erro.message);
         } finally {
-            submitBtn.disabled = false;
+            pararCarregando();
         }
     });
 
@@ -159,7 +159,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <button type="button" class="btn-icon btn-icon--view" data-acao="finalizar" title="Finalizar Venda"><i class="fa-solid fa-check"></i></button>
                 <button type="button" class="btn-icon btn-icon--delete" data-acao="devolver" title="Registrar Devolução"><i class="fa-solid fa-rotate-left"></i></button>`;
         } else if (c.venda_id) {
-            acoes = `<a class="btn-icon btn-icon--view" title="Recibo da venda #${c.venda_id}" href="recibo.php?venda=${c.venda_id}" target="_blank" style="text-decoration: none;"><i class="fa-solid fa-file-invoice"></i></a>`;
+            acoes = `<a class="btn-icon btn-icon--view" title="Recibo da venda #${c.venda_id}" href="recibo.php?venda=${c.venda_id}" style="text-decoration: none;"><i class="fa-solid fa-file-invoice"></i></a>`;
         }
 
         return `
@@ -198,6 +198,7 @@ document.addEventListener("DOMContentLoaded", () => {
             );
             if (!confirmado) return;
 
+            const pararCarregando = ModaSysCarregando.botao(botao, "");
             try {
                 await requisitarJson(`condicionais/${id}/devolver`, { method: "PATCH" });
                 mostrar(listaMensagemEl, `Condicional #${id} devolvida.`);
@@ -205,6 +206,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 await Promise.all([carregarProdutos(), carregarLista()]);
             } catch (erro) {
                 alert(erro.message);
+            } finally {
+                pararCarregando();
             }
             return;
         }
@@ -310,7 +313,7 @@ document.addEventListener("DOMContentLoaded", () => {
         );
         if (!confirmado) return;
 
-        finConfirmarBtn.disabled = true;
+        const pararCarregando = ModaSysCarregando.botao(finConfirmarBtn);
         try {
             const id = finalizando.id;
             const venda = await requisitarJson(`condicionais/${id}/finalizar`, {
@@ -329,13 +332,13 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             fecharFinalizacao();
-            listaMensagemEl.innerHTML = `Condicional #${id} finalizada — venda #${venda.id}. <a href="recibo.php?venda=${venda.id}" target="_blank">Imprimir recibo</a>`;
+            listaMensagemEl.innerHTML = `Condicional #${id} finalizada — venda #${venda.id}. <a href="recibo.php?venda=${venda.id}">Imprimir recibo</a>`;
             listaMensagemEl.style.display = "block";
             await Promise.all([carregarProdutos(), carregarLista()]);
         } catch (erro) {
             mostrar(finMensagem, erro.message);
         } finally {
-            finConfirmarBtn.disabled = false;
+            pararCarregando();
         }
     });
 

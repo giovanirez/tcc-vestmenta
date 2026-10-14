@@ -189,7 +189,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const confirmado = await ModaSysModal.confirmar(texto, { textoConfirmar: "Finalizar inventário" });
         if (!confirmado) return;
 
-        finalizarBtn.disabled = true;
+        const pararCarregando = ModaSysCarregando.botao(finalizarBtn);
         try {
             const resultado = await requisitarJson("inventario", {
                 method: "POST",
@@ -203,7 +203,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (erro) {
             mostrar(mensagemEl, erro.message);
         } finally {
-            finalizarBtn.disabled = false;
+            pararCarregando();
         }
     });
 
@@ -228,7 +228,7 @@ document.addEventListener("DOMContentLoaded", () => {
         );
         if (!confirmado) return;
 
-        perdaSubmit.disabled = true;
+        const pararCarregando = ModaSysCarregando.botao(perdaSubmit);
         try {
             await requisitarJson("inventario/perdas", {
                 method: "POST",
@@ -244,7 +244,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (erro) {
             mostrar(perdaMensagem, erro.message);
         } finally {
-            perdaSubmit.disabled = false;
+            pararCarregando();
         }
     });
 

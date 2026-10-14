@@ -27,6 +27,21 @@ RUN a2enmod rewrite headers \
        > /usr/local/etc/php/conf.d/modasys.ini \
     && echo 'ServerTokens Prod' >> /etc/apache2/apache2.conf
 
+# Poucos processos do Apache: cada um guarda UMA conexão persistente com
+# o banco (DB_PERSISTENTE=1), então isto é também o teto de conexões
+# abertas no pooler do Supabase. O plano gratuito do Render tem 0,1 CPU —
+# mais processos que isso não aumentariam a capacidade, só a memória.
+RUN printf '%s\n' \
+      '<IfModule mpm_prefork_module>' \
+      '    StartServers           2' \
+      '    MinSpareServers        1' \
+      '    MaxSpareServers        3' \
+      '    ServerLimit            6' \
+      '    MaxRequestWorkers      6' \
+      '    MaxConnectionsPerChild 0' \
+      '</IfModule>' \
+    > /etc/apache2/mods-available/mpm_prefork.conf
+
 ENV PORT=8080
 
 COPY src/ /var/www/html/src/

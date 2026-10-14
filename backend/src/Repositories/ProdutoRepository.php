@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Config\Database;
+use App\Support\Lote;
 use PDO;
 
 class ProdutoRepository
@@ -19,7 +20,14 @@ class ProdutoRepository
     public function listarTodos(): array
     {
         return $this->pdo->query(
-            'SELECT p.*, c.nome AS categoria_nome, f.razao_social AS fornecedor_nome
+            'SELECT p.*, c.nome AS categoria_nome, f.razao_social AS fornecedor_nome,
+                    -- Custo da compra mais recente (sugestão na próxima entrada);
+                    -- sem nenhuma entrada ainda, cai no custo do cadastro.
+                    COALESCE(
+                        (SELECT ei.custo_unitario FROM entrada_itens ei
+                         WHERE ei.produto_id = p.id ORDER BY ei.id DESC LIMIT 1),
+                        p.preco_custo
+                    ) AS ultimo_custo
              FROM produtos p
              LEFT JOIN categorias c ON c.id = p.categoria_id
              LEFT JOIN fornecedores f ON f.id = p.fornecedor_id
@@ -108,6 +116,51 @@ class ProdutoRepository
         return $porId;
     }
 
+    // Vários produtos por código numa ida só. Devolve [codigo => produto].
+    // $bloquear trava as linhas até o fim da transação (FOR UPDATE).
+    public function buscarPorCodigos(array $codigos, bool $bloquear = false): array
+    {
+        $codigos = array_values(array_unique($codigos));
+        if (!$codigos) {
+            return [];
+        }
+        $marcadores = implode(',', array_fill(0, count($codigos), '?'));
+        $consulta = $this->pdo->prepare(
+            "SELECT * FROM produtos WHERE codigo_interno IN ({$marcadores})" . ($bloquear ? ' FOR UPDATE' : '')
+        );
+        $consulta->execute($codigos);
+
+        $porCodigo = [];
+        foreach ($consulta->fetchAll() as $produto) {
+            $porCodigo[$produto['codigo_interno']] = $produto;
+        }
+        return $porCodigo;
+    }
+
+    // Cadastra vários produtos novos numa ida só (usado pela entrada).
+    // Devolve [codigo => produto criado].
+    public function criarVarios(array $produtos): array
+    {
+        if (!$produtos) {
+            return [];
+        }
+        $colunas = ['codigo_interno', 'nome', 'categoria_id', 'fornecedor_id', 'preco_custo', 'preco_venda'];
+        [$valores, $parametros] = Lote::valores($produtos, $colunas);
+
+        $consulta = $this->pdo->prepare(
+            "INSERT INTO produtos (codigo_interno, nome, categoria_id, fornecedor_id, preco_custo, preco_venda)
+             VALUES {$valores}
+             RETURNING *"
+        );
+        $consulta->execute($parametros);
+
+        $porCodigo = [];
+        foreach ($consulta->fetchAll() as $produto) {
+            $porCodigo[$produto['codigo_interno']] = $produto;
+        }
+        return $porCodigo;
+    }
+
     public function buscarPorCodigo(string $codigo): ?array
     {
         $consulta = $this->pdo->prepare('SELECT * FROM produtos WHERE codigo_interno = :codigo');
@@ -116,17 +169,28 @@ class ProdutoRepository
         return $produto ?: null;
     }
 
-    // Chamado a cada entrada de um produto que já existe: o custo
-    // passa a ser o da última compra, e o preço de venda só muda se
-    // a entrada trouxe um novo.
-    public function atualizarPrecosDaEntrada(int $id, float $precoCusto, ?float $precoVenda): void
+    // Entrada de um produto que já existe: descrição, categoria e preço
+    // de venda editados na tela de entradas valem pro produto inteiro
+    // (inclusive as peças que já estavam no estoque — a tela avisa antes).
+    // O custo NÃO muda aqui: ele é de cada compra e fica em entrada_itens.
+    //
+    // Campo null = manter o atual. Categoria é tratada à parte porque
+    // "sem categoria" (null) também é uma escolha válida.
+    public function atualizarCadastroPelaEntrada(int $id, ?string $nome, bool $mudarCategoria, ?int $categoriaId, ?float $precoVenda): void
     {
         $consulta = $this->pdo->prepare(
-            'UPDATE produtos SET preco_custo = :preco_custo,
+            'UPDATE produtos SET
+                nome = COALESCE(:nome, nome),
+                categoria_id = CASE WHEN :mudar_categoria THEN CAST(:categoria_id AS BIGINT) ELSE categoria_id END,
                 preco_venda = COALESCE(:preco_venda, preco_venda)
              WHERE id = :id'
         );
-        $consulta->execute(['id' => $id, 'preco_custo' => $precoCusto, 'preco_venda' => $precoVenda]);
+        $consulta->bindValue('id', $id, PDO::PARAM_INT);
+        $consulta->bindValue('nome', $nome);
+        $consulta->bindValue('mudar_categoria', $mudarCategoria, PDO::PARAM_BOOL);
+        $consulta->bindValue('categoria_id', $categoriaId, $categoriaId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
+        $consulta->bindValue('preco_venda', $precoVenda);
+        $consulta->execute();
     }
 
     public function codigoJaExiste(string $codigo, ?int $ignorarId = null): bool

@@ -7,6 +7,7 @@ use App\Repositories\ClienteRepository;
 use App\Repositories\DocumentoRepository;
 use App\Repositories\ProdutoRepository;
 use App\Repositories\VendaRepository;
+use App\Repositories\VendedorRepository;
 use App\Support\ErroDeNegocio;
 
 // Regras de venda num lugar só. Fica fora do controller porque duas
@@ -19,7 +20,9 @@ class VendaService
     public const MAX_PARCELAS_FIADO = 12;
 
     // $dados:
-    //   cliente_id          int|null (null = Cliente Balcão)
+    //   cliente_id          int (obrigatório — não existe mais venda
+    //                       sem cliente; vendas antigas podem ter NULL)
+    //   vendedor_id         int|null (quem atendeu; opcional)
     //   forma_pagamento     uma de FORMAS_PAGAMENTO
     //   parcelas_cartao     int, só p/ Cartão de Crédito
     //   parcelas            int, só p/ Fiado
@@ -43,6 +46,11 @@ class VendaService
                 throw new ErroDeNegocio('Cliente não encontrado.', 404);
             }
 
+            $vendedorId = !empty($dados['vendedor_id']) ? (int) $dados['vendedor_id'] : null;
+            if ($vendedorId !== null && !(new VendedorRepository())->buscarPorId($vendedorId)) {
+                throw new ErroDeNegocio('Vendedor não encontrado.', 404);
+            }
+
             [$itens, $subtotal] = $this->calcularItens($dados['itens']);
 
             $descontoGeral = round($subtotal * $this->percentual($dados['desconto_percentual'] ?? 0) / 100, 2);
@@ -58,6 +66,7 @@ class VendaService
                 'cliente_id' => $clienteId,
                 'condicional_id' => $condicionalId,
                 'usuario_id' => $usuarioId,
+                'vendedor_id' => $vendedorId,
                 'forma_pagamento' => $formaPagamento,
                 'parcelas_cartao' => $formaPagamento === 'Cartão de Crédito' ? (int) ($dados['parcelas_cartao'] ?? 1) : null,
                 'valor_subtotal' => $subtotal,
@@ -65,13 +74,8 @@ class VendaService
                 'valor_total' => $total,
             ]);
 
-            foreach ($itens as $item) {
-                $vendas->adicionarItem($vendaId, $item);
-            }
-
-            foreach ($this->gerarParcelas($total, $qtdParcelas) as $numero => $parcela) {
-                $vendas->adicionarParcela($vendaId, $numero, $parcela['valor'], $parcela['vencimento']);
-            }
+            $vendas->adicionarItens($vendaId, $itens);
+            $vendas->adicionarParcelas($vendaId, $this->gerarParcelas($total, $qtdParcelas));
 
             (new DocumentoRepository())->registrar(
                 'Saída',
@@ -128,8 +132,8 @@ class VendaService
         if (!in_array($forma, self::FORMAS_PAGAMENTO, true)) {
             $erros[] = 'Forma de pagamento inválida.';
         }
-        if ($forma === 'Fiado' && empty($dados['cliente_id'])) {
-            $erros[] = 'Venda fiado exige um cliente identificado.';
+        if (empty($dados['cliente_id'])) {
+            $erros[] = 'Selecione o cliente da venda.';
         }
         if ($forma === 'Fiado' && !$this->inteiroEntre($dados['parcelas'] ?? 1, 1, self::MAX_PARCELAS_FIADO)) {
             $erros[] = 'Número de parcelas do fiado inválido.';

@@ -19,7 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const lembrar = form.querySelector('input[name="lembrar"]').checked;
 
         botao.disabled = true;
-        botao.textContent = "Entrando...";
+        botao.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Entrando...';
 
         try {
             const resposta = await ModaSysAuth.buscar(ModaSysAuth.url("/auth/login"), {

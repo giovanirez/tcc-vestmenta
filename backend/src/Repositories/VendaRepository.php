@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Config\Database;
+use App\Support\Lote;
 use PDO;
 
 class VendaRepository
@@ -20,12 +21,13 @@ class VendaRepository
     {
         return $this->pdo->query(
             "SELECT v.id, v.data_venda, v.forma_pagamento, v.parcelas_cartao, v.valor_total, v.status,
-                    c.nome AS cliente_nome,
+                    c.nome AS cliente_nome, ve.nome AS vendedor_nome,
                     (SELECT string_agg(vi.quantidade || 'x ' || p.nome, ', ' ORDER BY vi.id)
                      FROM venda_itens vi JOIN produtos p ON p.id = vi.produto_id
                      WHERE vi.venda_id = v.id) AS itens_resumo
              FROM vendas v
              LEFT JOIN clientes c ON c.id = v.cliente_id
+             LEFT JOIN vendedores ve ON ve.id = v.vendedor_id
              ORDER BY v.data_venda DESC, v.id DESC"
         )->fetchAll();
     }
@@ -33,10 +35,11 @@ class VendaRepository
     public function buscarPorId(int $id, bool $bloquear = false): ?array
     {
         $consulta = $this->pdo->prepare(
-            'SELECT v.*, c.nome AS cliente_nome, u.nome AS usuario_nome
+            'SELECT v.*, c.nome AS cliente_nome, u.nome AS usuario_nome, ve.nome AS vendedor_nome
              FROM vendas v
              LEFT JOIN clientes c ON c.id = v.cliente_id
              LEFT JOIN usuarios u ON u.id = v.usuario_id
+             LEFT JOIN vendedores ve ON ve.id = v.vendedor_id
              WHERE v.id = :id' . ($bloquear ? ' FOR UPDATE OF v' : '')
         );
         $consulta->execute(['id' => $id]);
@@ -68,10 +71,10 @@ class VendaRepository
     {
         $consulta = $this->pdo->prepare(
             'INSERT INTO vendas
-                (cliente_id, condicional_id, usuario_id, forma_pagamento, parcelas_cartao,
+                (cliente_id, condicional_id, usuario_id, vendedor_id, forma_pagamento, parcelas_cartao,
                  valor_subtotal, valor_desconto, valor_total)
              VALUES
-                (:cliente_id, :condicional_id, :usuario_id, :forma_pagamento, :parcelas_cartao,
+                (:cliente_id, :condicional_id, :usuario_id, :vendedor_id, :forma_pagamento, :parcelas_cartao,
                  :valor_subtotal, :valor_desconto, :valor_total)
              RETURNING id'
         );
@@ -79,22 +82,32 @@ class VendaRepository
         return (int) $consulta->fetchColumn();
     }
 
-    public function adicionarItem(int $vendaId, array $item): void
+    // Todos os itens numa ida só ao banco.
+    public function adicionarItens(int $vendaId, array $itens): void
     {
-        $consulta = $this->pdo->prepare(
-            'INSERT INTO venda_itens (venda_id, produto_id, quantidade, valor_unitario, valor_desconto, valor_total)
-             VALUES (:venda_id, :produto_id, :quantidade, :valor_unitario, :valor_desconto, :valor_total)'
-        );
-        $consulta->execute(['venda_id' => $vendaId] + $item);
+        $linhas = array_map(fn ($item) => ['venda_id' => $vendaId] + $item, $itens);
+        [$valores, $parametros] = Lote::valores($linhas, ['venda_id', 'produto_id', 'quantidade', 'valor_unitario', 'valor_desconto', 'valor_total']);
+
+        $this->pdo->prepare(
+            "INSERT INTO venda_itens (venda_id, produto_id, quantidade, valor_unitario, valor_desconto, valor_total) VALUES {$valores}"
+        )->execute($parametros);
     }
 
-    public function adicionarParcela(int $vendaId, int $numero, float $valor, string $vencimento): void
+    // $parcelas: [numero => ['valor' => float, 'vencimento' => 'Y-m-d']]
+    public function adicionarParcelas(int $vendaId, array $parcelas): void
     {
-        $consulta = $this->pdo->prepare(
-            'INSERT INTO venda_parcelas (venda_id, numero_parcela, valor, data_vencimento)
-             VALUES (:venda_id, :numero, :valor, :vencimento)'
-        );
-        $consulta->execute(['venda_id' => $vendaId, 'numero' => $numero, 'valor' => $valor, 'vencimento' => $vencimento]);
+        if (!$parcelas) {
+            return;
+        }
+        $linhas = [];
+        foreach ($parcelas as $numero => $parcela) {
+            $linhas[] = ['venda_id' => $vendaId, 'numero' => $numero, 'valor' => $parcela['valor'], 'vencimento' => $parcela['vencimento']];
+        }
+        [$valores, $parametros] = Lote::valores($linhas, ['venda_id', 'numero', 'valor', 'vencimento']);
+
+        $this->pdo->prepare(
+            "INSERT INTO venda_parcelas (venda_id, numero_parcela, valor, data_vencimento) VALUES {$valores}"
+        )->execute($parametros);
     }
 
     public function cancelar(int $id): void

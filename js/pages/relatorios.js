@@ -97,7 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        gerarBtn.disabled = true;
+        const pararCarregando = ModaSysCarregando.botao(gerarBtn, "Gerando...");
         try {
             const parametros = new URLSearchParams({ inicio: inicio.value, fim: fim.value });
             const resposta = await ModaSysAuth.requisitar(`/relatorios?${parametros}`);
@@ -110,7 +110,7 @@ document.addEventListener("DOMContentLoaded", () => {
             mensagemEl.textContent = erro.message;
             mensagemEl.style.display = "block";
         } finally {
-            gerarBtn.disabled = false;
+            pararCarregando();
         }
     }
 

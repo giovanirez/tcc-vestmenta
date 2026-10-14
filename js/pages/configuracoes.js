@@ -95,6 +95,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         mensagemEl.style.display = "none";
 
+        const pararCarregando = ModaSysCarregando.botao(form.querySelector('[type="submit"]'), "Salvando...");
         try {
             if (emEdicao) {
                 const resposta = await ModaSysAuth.requisitar(`/usuarios/${idInput.value}`, {
@@ -126,6 +127,8 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (erro) {
             mensagemEl.textContent = erro.message;
             mensagemEl.style.display = "block";
+        } finally {
+            pararCarregando();
         }
     });
 
@@ -151,11 +154,14 @@ document.addEventListener("DOMContentLoaded", () => {
             );
             if (!confirmado) return;
 
+            const pararCarregando = ModaSysCarregando.botao(botao, "");
             try {
                 await ModaSysAuth.requisitar(`/usuarios/${id}/ativo`, { method: "PATCH" });
                 await carregarLista();
             } catch (erro) {
                 alert(erro.message);
+            } finally {
+                pararCarregando();
             }
         }
     });

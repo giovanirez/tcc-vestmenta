@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Config\Database;
+use App\Support\Lote;
 use PDO;
 
 // O "kardex": único caminho pra mexer no estoque. Inserir itens aqui
@@ -19,35 +20,33 @@ class DocumentoRepository
     }
 
     // $itens: lista de ['produto_id' => int, 'quantidade' => int > 0]
+    //
+    // Cabeçalho e todos os itens numa ida só ao banco: o INSERT do
+    // documento fica num WITH, e os itens usam o id que ele devolve.
+    // A trigger de estoque e a FK rodam no fim do comando, quando o
+    // documento já existe — por isso funciona num comando só.
     public function registrar(string $tipo, string $origem, ?int $referenciaId, string $data, array $itens, ?string $observacao = null): int
     {
-        $consulta = $this->pdo->prepare(
-            'INSERT INTO documentos (tipo, origem, referencia_id, data, observacao)
-             VALUES (:tipo, :origem, :referencia_id, :data, :observacao)
-             RETURNING id'
-        );
-        $consulta->execute([
-            'tipo' => $tipo,
-            'origem' => $origem,
-            'referencia_id' => $referenciaId,
-            'data' => $data,
-            'observacao' => $observacao,
-        ]);
-        $documentoId = (int) $consulta->fetchColumn();
-
-        $insereItem = $this->pdo->prepare(
-            'INSERT INTO documento_itens (documento_id, produto_id, quantidade)
-             VALUES (:documento_id, :produto_id, :quantidade)'
-        );
-        foreach ($itens as $item) {
-            $insereItem->execute([
-                'documento_id' => $documentoId,
-                'produto_id' => $item['produto_id'],
-                'quantidade' => $item['quantidade'],
-            ]);
+        if (!$itens) {
+            throw new \InvalidArgumentException('Documento de estoque sem itens.');
         }
 
-        return $documentoId;
+        [$valores, $parametrosItens] = Lote::valores($itens, ['produto_id', 'quantidade'], ['produto_id' => 'BIGINT', 'quantidade' => 'INTEGER']);
+
+        $consulta = $this->pdo->prepare(
+            "WITH documento AS (
+                INSERT INTO documentos (tipo, origem, referencia_id, data, observacao)
+                VALUES (?, ?, CAST(? AS BIGINT), CAST(? AS DATE), ?)
+                RETURNING id
+             )
+             INSERT INTO documento_itens (documento_id, produto_id, quantidade)
+             SELECT documento.id, itens.produto_id, itens.quantidade
+             FROM documento CROSS JOIN (VALUES {$valores}) AS itens(produto_id, quantidade)
+             RETURNING documento_id"
+        );
+        $consulta->execute(array_merge([$tipo, $origem, $referenciaId, $data, $observacao], $parametrosItens));
+
+        return (int) $consulta->fetchColumn();
     }
 
     // Últimos ajustes manuais (inventário e perdas) — os que não têm
