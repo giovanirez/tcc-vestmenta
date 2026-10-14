@@ -143,6 +143,7 @@ document.addEventListener("DOMContentLoaded", () => {
             uf: uf.value,
         };
 
+        const pararCarregando = ModaSysCarregando.botao(form.querySelector('[type="submit"]'), "Salvando...");
         try {
             const resposta = await ModaSysAuth.requisitar(
                 emEdicao
@@ -159,6 +160,8 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (erro) {
             mensagemEl.textContent = erro.message;
             mensagemEl.style.display = "block";
+        } finally {
+            pararCarregando();
         }
     });
 

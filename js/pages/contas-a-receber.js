@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return `
             <tr data-id="${p.id}">
                 <td><strong>${escapar(p.cliente_nome || "—")}</strong></td>
-                <td class="mono"><a href="recibo.php?venda=${p.venda_id}" target="_blank">#${p.venda_id}</a></td>
+                <td class="mono"><a href="recibo.php?venda=${p.venda_id}">#${p.venda_id}</a></td>
                 <td class="mono">${p.numero_parcela}ª</td>
                 <td class="mono">${paraReais(p.valor)}</td>
                 <td>${dataBr(p.data_vencimento)}</td>
@@ -78,6 +78,7 @@ document.addEventListener("DOMContentLoaded", () => {
         );
         if (!confirmado) return;
 
+        const pararCarregando = ModaSysCarregando.botao(botao, "");
         try {
             const resposta = await ModaSysAuth.requisitar(`/contas-a-receber/${id}/pagar`, { method: "PATCH" });
             const dados = await resposta.json();
@@ -85,6 +86,8 @@ document.addEventListener("DOMContentLoaded", () => {
             await carregarLista();
         } catch (erro) {
             alert(erro.message);
+        } finally {
+            pararCarregando();
         }
     });
 

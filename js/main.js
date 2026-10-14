@@ -173,6 +173,28 @@ const ModaSysModal = {
 
 window.ModaSysModal = ModaSysModal;
 
+// ---- Botão "carregando": trava o botão e mostra um spinner enquanto a
+// API responde. Evita clique duplo (ex.: duas entradas iguais) e deixa
+// claro que algo está acontecendo — no plano gratuito do Render a
+// primeira requisição depois de um tempo parado pode levar vários
+// segundos. Devolve a função que restaura o botão.
+const ModaSysCarregando = {
+    botao(botao, texto = "Processando...") {
+        if (!botao) return () => {};
+        const original = botao.innerHTML;
+        botao.disabled = true;
+        botao.setAttribute("aria-busy", "true");
+        botao.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>${texto ? " " + texto : ""}`;
+        return () => {
+            botao.disabled = false;
+            botao.removeAttribute("aria-busy");
+            botao.innerHTML = original;
+        };
+    },
+};
+
+window.ModaSysCarregando = ModaSysCarregando;
+
 // ---- Select com botão "+" pra cadastrar um item novo na hora ----
 // Usado na categoria do produto (produtos.php, entradas.php) e no
 // vendedor da venda (vendas.php). O select lista só o que já está em uso
@@ -231,7 +253,7 @@ const ModaSysSelectComNovo = {
                 return;
             }
 
-            botaoOk.disabled = true;
+            const pararCarregando = ModaSysCarregando.botao(botaoOk, "");
             try {
                 const resposta = await ModaSysAuth.requisitar(rota, {
                     method: "POST",
@@ -248,7 +270,7 @@ const ModaSysSelectComNovo = {
             } catch (erro) {
                 alert(erro.message);
             } finally {
-                botaoOk.disabled = false;
+                pararCarregando();
             }
         }
 

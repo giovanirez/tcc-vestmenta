@@ -91,7 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
         mensagemEl.style.display = "none";
 
         const editando = Boolean(idInput.value);
-        submitBtn.disabled = true;
+        const pararCarregando = ModaSysCarregando.botao(submitBtn);
         try {
             const resposta = await ModaSysAuth.requisitar(`/custos-fixos${editando ? `/${idInput.value}` : ""}`, {
                 method: editando ? "PUT" : "POST",
@@ -112,7 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
             mensagemEl.textContent = erro.message;
             mensagemEl.style.display = "block";
         } finally {
-            submitBtn.disabled = false;
+            pararCarregando();
         }
     });
 
@@ -137,12 +137,15 @@ document.addEventListener("DOMContentLoaded", () => {
         );
         if (!confirmado) return;
 
+        const pararCarregando = ModaSysCarregando.botao(botao, "");
         try {
             const resposta = await ModaSysAuth.requisitar(`/custos-fixos/${id}/ativo`, { method: "PATCH" });
             if (!resposta.ok) throw new Error((await resposta.json()).erro || "Não foi possível alterar.");
             await carregarLista();
         } catch (erro) {
             alert(erro.message);
+        } finally {
+            pararCarregando();
         }
     });
 

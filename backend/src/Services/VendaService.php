@@ -20,7 +20,8 @@ class VendaService
     public const MAX_PARCELAS_FIADO = 12;
 
     // $dados:
-    //   cliente_id          int|null (null = Cliente Balcão)
+    //   cliente_id          int (obrigatório — não existe mais venda
+    //                       sem cliente; vendas antigas podem ter NULL)
     //   vendedor_id         int|null (quem atendeu; opcional)
     //   forma_pagamento     uma de FORMAS_PAGAMENTO
     //   parcelas_cartao     int, só p/ Cartão de Crédito
@@ -136,8 +137,8 @@ class VendaService
         if (!in_array($forma, self::FORMAS_PAGAMENTO, true)) {
             $erros[] = 'Forma de pagamento inválida.';
         }
-        if ($forma === 'Fiado' && empty($dados['cliente_id'])) {
-            $erros[] = 'Venda fiado exige um cliente identificado.';
+        if (empty($dados['cliente_id'])) {
+            $erros[] = 'Selecione o cliente da venda.';
         }
         if ($forma === 'Fiado' && !$this->inteiroEntre($dados['parcelas'] ?? 1, 1, self::MAX_PARCELAS_FIADO)) {
             $erros[] = 'Número de parcelas do fiado inválido.';

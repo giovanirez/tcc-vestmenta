@@ -10,11 +10,11 @@
                 <label>Cliente</label>
                 <div style="display: flex; gap: 10px;">
                     <select class="form-control" id="pdv-cliente" style="flex: 1;">
-                        <option value="balcao">Cliente Balcão (Não Identificado)</option>
+                        <option value="">Selecione o cliente...</option>
                     </select>
                     <a href="clientes.php" target="_blank" class="btn-icon" title="Cadastrar novo cliente (abre em outra aba)" style="display: flex; align-items: center; text-decoration: none; "background: var(--paper); padding: 0 15px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);"><i class="fa-solid fa-user-plus"></i></a>
                 </div>
-                <small id="pdv-cliente-aviso" class="text-rust" style="display: none; margin-top: 6px;">Venda fiado exige um cliente identificado — selecione um cliente cadastrado.</small>
+                <small id="pdv-cliente-aviso" class="text-rust" style="display: none; margin-top: 6px;">Selecione o cliente da venda. Se ele ainda não tem cadastro, use o botão ao lado.</small>
             </div>
 
             <div class="form-group">

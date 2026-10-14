@@ -75,7 +75,7 @@ $ALTURA_BASE_MM = 148.5;
 
     <div class="no-print acoes-tela" id="recibo-acoes" style="display: none;">
         <button class="btn" onclick="window.print()"><i class="fa-solid fa-print"></i> Imprimir</button>
-        <button class="btn btn-outline" onclick="window.close()">Fechar</button>
+        <button class="btn btn-outline" id="recibo-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
     </div>
 
     <div class="recibo" id="recibo">
@@ -163,6 +163,14 @@ $ALTURA_BASE_MM = 148.5;
             </div>`;
 
         document.getElementById("recibo-acoes").style.display = "flex";
+
+        // O recibo abre na mesma aba (não em aba nova: aba nova perde o
+        // login de quem não marcou "Lembrar de mim", e no app instalado
+        // abriria fora do app). "Voltar" volta pra tela de onde veio.
+        document.getElementById("recibo-voltar").addEventListener("click", () => {
+            if (history.length > 1) history.back();
+            else window.location.href = "vendas.php";
+        });
     });
     </script>
 

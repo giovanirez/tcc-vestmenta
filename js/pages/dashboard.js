@@ -32,7 +32,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     <td><strong class="price">${paraReais(v.valor_total)}</strong></td>
                     <td><span class="badge ${v.status === "Cancelada" ? "badge-neutral" : "badge-success"}">${v.status}</span></td>
                     <td>
-                        <a class="btn-icon btn-icon--view" title="Ver Recibo" href="recibo.php?venda=${v.id}" target="_blank" style="text-decoration: none;"><i class="fa-solid fa-file-invoice"></i></a>
+                        <a class="btn-icon btn-icon--view" title="Ver Recibo" href="recibo.php?venda=${v.id}" style="text-decoration: none;"><i class="fa-solid fa-file-invoice"></i></a>
                     </td>
                 </tr>`).join("")
             : '<tr><td colspan="6" class="text-muted">Nenhuma venda registrada ainda.</td></tr>';

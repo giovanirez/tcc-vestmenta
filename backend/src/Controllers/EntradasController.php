@@ -34,7 +34,9 @@ class EntradasController
 
     // Processa uma entrada inteira numa transação só:
     //   1. produto novo (código ainda não existe) é cadastrado na hora;
-    //      produto existente tem o custo/preço atualizados;
+    //      produto existente tem descrição/categoria/preço de venda
+    //      atualizados no cadastro (o custo é só desta compra e fica
+    //      em entrada_itens — não sobrescreve o cadastro);
     //   2. grava o cabeçalho em `entradas` e cada linha em `entrada_itens`;
     //   3. grava um documento Entrada/Compra no kardex — é ele que, via
     //      trigger, soma as peças no estoque.
@@ -71,7 +73,14 @@ class EntradasController
 
                 $produto = $produtos->buscarPorCodigo($codigo);
                 if ($produto) {
-                    $produtos->atualizarPrecosDaEntrada((int) $produto['id'], $custo, $precoVenda);
+                    $categoria = $item['categoria_id'] ?? null;
+                    $produtos->atualizarCadastroPelaEntrada(
+                        (int) $produto['id'],
+                        $this->textoOuNulo($item['nome'] ?? null),
+                        array_key_exists('categoria_id', $item),
+                        $categoria !== null && $categoria !== '' ? (int) $categoria : null,
+                        $precoVenda
+                    );
                 } else {
                     $produto = $produtos->criar([
                         'codigo_interno' => $codigo,
