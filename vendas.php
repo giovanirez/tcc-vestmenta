@@ -17,6 +17,13 @@
                 <small id="pdv-cliente-aviso" class="text-rust" style="display: none; margin-top: 6px;">Venda fiado exige um cliente identificado — selecione um cliente cadastrado.</small>
             </div>
 
+            <div class="form-group">
+                <label>Vendedor</label>
+                <select class="form-control" id="pdv-vendedor">
+                    <option value="">Não informado</option>
+                </select>
+            </div>
+
             <div class="pdv-scan">
                 <label style="display: block; margin-bottom: 10px; font-weight: 500;"><i class="fa-solid fa-barcode"></i> Lançar Produto</label>
                 <div class="item-add-grid" style="display: flex; gap: 10px; flex-wrap: wrap;">

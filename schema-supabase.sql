@@ -187,6 +187,18 @@ CREATE TABLE IF NOT EXISTS condicional_itens (
     quantidade      INTEGER NOT NULL DEFAULT 1
 );
 
+-- vendedores: quem atendeu o cliente na loja (select "Vendedor" do PDV).
+-- Diferente de vendas.usuario_id, que é o login usado no sistema —
+-- várias vendedoras podem usar o mesmo login do caixa. Nome único sem
+-- diferenciar maiúsculas, pra "Ana" e "ana" não virarem duas pessoas.
+CREATE TABLE IF NOT EXISTS vendedores (
+    id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    nome       VARCHAR(80) NOT NULL,
+    criado_em  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_vendedores_nome ON vendedores (lower(nome));
+
 -- vendas: histórico do PDV (vendas.php) e KPIs do dashboard
 --
 -- cliente_id aceita NULL -> representa o "Cliente Balcão" do PDV.
@@ -202,6 +214,7 @@ CREATE TABLE IF NOT EXISTS vendas (
     cliente_id       BIGINT REFERENCES clientes(id) ON DELETE SET NULL,
     condicional_id   BIGINT REFERENCES condicionais(id) ON DELETE SET NULL,
     usuario_id       BIGINT REFERENCES usuarios(id) ON DELETE SET NULL,
+    vendedor_id      BIGINT REFERENCES vendedores(id) ON DELETE SET NULL,
     data_venda       TIMESTAMPTZ NOT NULL DEFAULT now(),
     forma_pagamento  TEXT NOT NULL CHECK (forma_pagamento IN ('PIX', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Fiado')),
     parcelas_cartao  SMALLINT,
@@ -214,6 +227,7 @@ CREATE TABLE IF NOT EXISTS vendas (
 COMMENT ON COLUMN vendas.parcelas_cartao IS 'Em quantas vezes o cliente parcelou no cartão. Só informativo — quem financia é a operadora, não a loja. NULL quando a forma de pagamento não é cartão.';
 
 CREATE INDEX IF NOT EXISTS idx_vendas_data ON vendas(data_venda);
+CREATE INDEX IF NOT EXISTS idx_vendas_vendedor ON vendas(vendedor_id);
 
 -- itens de cada venda. valor_unitario é o preço no momento da
 -- venda (uma "fotografia" do preço) — não referencia produtos.preco_venda,

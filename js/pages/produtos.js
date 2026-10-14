@@ -143,7 +143,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    ModaSysCategorias.ligar(categoria);
+    ModaSysSelectComNovo.ligar(categoria, { rota: "/categorias", rotulo: "categoria", tamanhoMaximo: 60 });
     carregarOpcoes(categoria, "categorias", "nome");
     carregarOpcoes(fornecedor, "fornecedores", "razao_social");
     carregarLista();

@@ -143,7 +143,7 @@ $ALTURA_BASE_MM = 148.5;
                 <div><span>Data</span><span>${dataHora(venda.data_venda)}</span></div>
                 <div><span>Cliente</span><span>${escapar(venda.cliente_nome || "Cliente Balcão")}</span></div>
                 <div><span>Pagamento</span><span>${escapar(venda.forma_pagamento)}${venda.parcelas_cartao ? ` (${venda.parcelas_cartao}x)` : ""}</span></div>
-                ${venda.usuario_nome ? `<div><span>Atendido por</span><span>${escapar(venda.usuario_nome)}</span></div>` : ""}
+                ${venda.vendedor_nome || venda.usuario_nome ? `<div><span>Atendido por</span><span>${escapar(venda.vendedor_nome || venda.usuario_nome)}</span></div>` : ""}
             </div>
 
             <div class="recibo-linha-pontilhada"></div>

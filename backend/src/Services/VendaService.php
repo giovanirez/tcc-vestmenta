@@ -7,6 +7,7 @@ use App\Repositories\ClienteRepository;
 use App\Repositories\DocumentoRepository;
 use App\Repositories\ProdutoRepository;
 use App\Repositories\VendaRepository;
+use App\Repositories\VendedorRepository;
 use App\Support\ErroDeNegocio;
 
 // Regras de venda num lugar só. Fica fora do controller porque duas
@@ -20,6 +21,7 @@ class VendaService
 
     // $dados:
     //   cliente_id          int|null (null = Cliente Balcão)
+    //   vendedor_id         int|null (quem atendeu; opcional)
     //   forma_pagamento     uma de FORMAS_PAGAMENTO
     //   parcelas_cartao     int, só p/ Cartão de Crédito
     //   parcelas            int, só p/ Fiado
@@ -43,6 +45,11 @@ class VendaService
                 throw new ErroDeNegocio('Cliente não encontrado.', 404);
             }
 
+            $vendedorId = !empty($dados['vendedor_id']) ? (int) $dados['vendedor_id'] : null;
+            if ($vendedorId !== null && !(new VendedorRepository())->buscarPorId($vendedorId)) {
+                throw new ErroDeNegocio('Vendedor não encontrado.', 404);
+            }
+
             [$itens, $subtotal] = $this->calcularItens($dados['itens']);
 
             $descontoGeral = round($subtotal * $this->percentual($dados['desconto_percentual'] ?? 0) / 100, 2);
@@ -58,6 +65,7 @@ class VendaService
                 'cliente_id' => $clienteId,
                 'condicional_id' => $condicionalId,
                 'usuario_id' => $usuarioId,
+                'vendedor_id' => $vendedorId,
                 'forma_pagamento' => $formaPagamento,
                 'parcelas_cartao' => $formaPagamento === 'Cartão de Crédito' ? (int) ($dados['parcelas_cartao'] ?? 1) : null,
                 'valor_subtotal' => $subtotal,

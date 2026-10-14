@@ -5,6 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const formaPagamento = document.getElementById("pdv-forma-pagamento");
     const cliente = document.getElementById("pdv-cliente");
+    const vendedor = document.getElementById("pdv-vendedor");
     const clienteAviso = document.getElementById("pdv-cliente-aviso");
     const fiadoDetalhes = document.getElementById("pdv-fiado-detalhes");
     const parcelasSelect = document.getElementById("pdv-parcelas");
@@ -263,6 +264,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 method: "POST",
                 body: JSON.stringify({
                     cliente_id: cliente.value === "balcao" ? null : cliente.value,
+                    vendedor_id: vendedor.value || null,
                     forma_pagamento: formaPagamento.value,
                     parcelas_cartao: parcelasCartao.value,
                     parcelas: parcelasSelect.value,
@@ -277,6 +279,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const venda = await resposta.json();
             if (!resposta.ok) throw new Error(venda.erro || "Não foi possível finalizar a venda.");
 
+            // O vendedor continua selecionado: normalmente é a mesma pessoa
+            // atendendo a próxima venda.
             carrinho = [];
             descontoGeral.value = 0;
             cliente.value = "balcao";
@@ -307,7 +311,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <tr data-id="${v.id}" ${cancelada ? 'style="opacity: 0.6;"' : ""}>
                 <td class="mono">#${v.id}</td>
                 <td>${new Date(v.data_venda).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</td>
-                <td><strong>${escapar(v.cliente_nome || "Cliente Balcão")}</strong></td>
+                <td><strong>${escapar(v.cliente_nome || "Cliente Balcão")}</strong>${v.vendedor_nome ? `<br><small class="text-muted"><i class="fa-solid fa-user-tag"></i> ${escapar(v.vendedor_nome)}</small>` : ""}</td>
                 <td><small>${escapar(v.itens_resumo || "")}</small></td>
                 <td><span class="badge ${v.forma_pagamento === "Fiado" ? "badge-warning" : "badge-info"}">${escapar(pagamento)}</span></td>
                 <td class="mono"><strong>${paraReais(v.valor_total)}</strong></td>
@@ -371,6 +375,12 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    async function carregarVendedores() {
+        (await buscar("vendedores")).forEach(v => ModaSysSelectComNovo.adicionarOpcao(vendedor, v));
+    }
+
+    ModaSysSelectComNovo.ligar(vendedor, { rota: "/vendedores", rotulo: "vendedor", tamanhoMaximo: 80 });
+
     async function carregarHistorico() {
         try {
             const vendas = await buscar("vendas");
@@ -382,7 +392,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    Promise.all([carregarProdutos(), carregarClientes()]).catch(erro => mostrarMensagem(erro.message));
+    Promise.all([carregarProdutos(), carregarClientes(), carregarVendedores()]).catch(erro => mostrarMensagem(erro.message));
     carregarHistorico();
     renderizarCarrinho();
 });

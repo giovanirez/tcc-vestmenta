@@ -173,17 +173,20 @@ const ModaSysModal = {
 
 window.ModaSysModal = ModaSysModal;
 
-// ---- Select de categoria com botão "+" pra criar uma nova na hora ----
-// Usado em produtos.php e entradas.php. O select lista só as categorias
-// que algum produto já usa (GET /categorias); o "+" troca o select por
-// um campo de texto, cria a categoria (POST /categorias — se o nome já
-// existir, o backend devolve a existente) e já deixa ela selecionada.
-const ModaSysCategorias = {
-    // aoCriar(categoria) é opcional: avisa a página da categoria nova
-    // (ex.: entradas.js guarda a lista pra mostrar o nome na tabela).
-    ligar(select, aoCriar) {
-        if (!select || select.dataset.categoriaLigada) return;
-        select.dataset.categoriaLigada = "1";
+// ---- Select com botão "+" pra cadastrar um item novo na hora ----
+// Usado na categoria do produto (produtos.php, entradas.php) e no
+// vendedor da venda (vendas.php). O select lista só o que já está em uso
+// (GET da rota); o "+" troca o select por um campo de texto, cria o item
+// (POST na rota — se o nome já existir, o backend devolve o existente) e
+// já deixa ele selecionado.
+//
+// opcoes: { rota: "/categorias", rotulo: "categoria", tamanhoMaximo: 60,
+//           aoCriar(item) — opcional, avisa a página do item novo }
+const ModaSysSelectComNovo = {
+    ligar(select, opcoes) {
+        if (!select || select.dataset.selectComNovo) return;
+        select.dataset.selectComNovo = "1";
+        const { rota, rotulo, tamanhoMaximo = 60, aoCriar } = opcoes;
 
         const linha = document.createElement("div");
         linha.className = "campo-com-acao";
@@ -193,7 +196,7 @@ const ModaSysCategorias = {
         const botaoNovo = document.createElement("button");
         botaoNovo.type = "button";
         botaoNovo.className = "btn-acao-campo";
-        botaoNovo.title = "Nova categoria";
+        botaoNovo.title = `Adicionar ${rotulo}`;
         botaoNovo.innerHTML = '<i class="fa-solid fa-plus"></i>';
         linha.appendChild(botaoNovo);
 
@@ -201,8 +204,8 @@ const ModaSysCategorias = {
         editor.className = "campo-com-acao";
         editor.style.display = "none";
         editor.innerHTML = `
-            <input type="text" class="form-control" maxlength="60" placeholder="Nome da nova categoria">
-            <button type="button" class="btn-acao-campo btn-acao-campo--ok" title="Criar categoria"><i class="fa-solid fa-check"></i></button>
+            <input type="text" class="form-control" maxlength="${tamanhoMaximo}" placeholder="Nome (${rotulo})">
+            <button type="button" class="btn-acao-campo btn-acao-campo--ok" title="Adicionar ${rotulo}"><i class="fa-solid fa-check"></i></button>
             <button type="button" class="btn-acao-campo" title="Cancelar"><i class="fa-solid fa-xmark"></i></button>`;
         linha.parentNode.insertBefore(editor, linha.nextSibling);
 
@@ -230,17 +233,17 @@ const ModaSysCategorias = {
 
             botaoOk.disabled = true;
             try {
-                const resposta = await ModaSysAuth.requisitar("/categorias", {
+                const resposta = await ModaSysAuth.requisitar(rota, {
                     method: "POST",
                     body: JSON.stringify({ nome }),
                 });
-                const categoria = await resposta.json();
-                if (!resposta.ok) throw new Error(categoria.erro || "Não foi possível criar a categoria.");
+                const item = await resposta.json();
+                if (!resposta.ok) throw new Error(item.erro || `Não foi possível adicionar ${rotulo}.`);
 
-                ModaSysCategorias.adicionarOpcao(select, categoria);
-                select.value = String(categoria.id);
+                ModaSysSelectComNovo.adicionarOpcao(select, item);
+                select.value = String(item.id);
                 select.dispatchEvent(new Event("change", { bubbles: true }));
-                if (aoCriar) aoCriar(categoria);
+                if (aoCriar) aoCriar(item);
                 fechar();
             } catch (erro) {
                 alert(erro.message);
@@ -274,17 +277,17 @@ const ModaSysCategorias = {
     },
 
     // Insere a opção em ordem alfabética, sem duplicar.
-    adicionarOpcao(select, categoria) {
-        const id = String(categoria.id);
+    adicionarOpcao(select, item) {
+        const id = String(item.id);
         if ([...select.options].some(o => o.value === id)) return;
 
-        const opcao = new Option(categoria.nome, id);
-        const depois = [...select.options].find(o => o.value && o.text.localeCompare(categoria.nome, "pt-BR") > 0);
+        const opcao = new Option(item.nome, id);
+        const depois = [...select.options].find(o => o.value && o.text.localeCompare(item.nome, "pt-BR") > 0);
         select.add(opcao, depois || null);
     },
 };
 
-window.ModaSysCategorias = ModaSysCategorias;
+window.ModaSysSelectComNovo = ModaSysSelectComNovo;
 
 // ---- PWA: botão "Instalar app" e aviso de sem conexão ----
 const ModaSysPwa = {
