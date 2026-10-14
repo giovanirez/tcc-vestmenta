@@ -173,6 +173,119 @@ const ModaSysModal = {
 
 window.ModaSysModal = ModaSysModal;
 
+// ---- Select de categoria com botão "+" pra criar uma nova na hora ----
+// Usado em produtos.php e entradas.php. O select lista só as categorias
+// que algum produto já usa (GET /categorias); o "+" troca o select por
+// um campo de texto, cria a categoria (POST /categorias — se o nome já
+// existir, o backend devolve a existente) e já deixa ela selecionada.
+const ModaSysCategorias = {
+    // aoCriar(categoria) é opcional: avisa a página da categoria nova
+    // (ex.: entradas.js guarda a lista pra mostrar o nome na tabela).
+    ligar(select, aoCriar) {
+        if (!select || select.dataset.categoriaLigada) return;
+        select.dataset.categoriaLigada = "1";
+
+        const linha = document.createElement("div");
+        linha.className = "campo-com-acao";
+        select.parentNode.insertBefore(linha, select);
+        linha.appendChild(select);
+
+        const botaoNovo = document.createElement("button");
+        botaoNovo.type = "button";
+        botaoNovo.className = "btn-acao-campo";
+        botaoNovo.title = "Nova categoria";
+        botaoNovo.innerHTML = '<i class="fa-solid fa-plus"></i>';
+        linha.appendChild(botaoNovo);
+
+        const editor = document.createElement("div");
+        editor.className = "campo-com-acao";
+        editor.style.display = "none";
+        editor.innerHTML = `
+            <input type="text" class="form-control" maxlength="60" placeholder="Nome da nova categoria">
+            <button type="button" class="btn-acao-campo btn-acao-campo--ok" title="Criar categoria"><i class="fa-solid fa-check"></i></button>
+            <button type="button" class="btn-acao-campo" title="Cancelar"><i class="fa-solid fa-xmark"></i></button>`;
+        linha.parentNode.insertBefore(editor, linha.nextSibling);
+
+        const campo = editor.querySelector("input");
+        const [botaoOk, botaoCancelar] = editor.querySelectorAll("button");
+
+        function abrir() {
+            linha.style.display = "none";
+            editor.style.display = "flex";
+            campo.value = "";
+            campo.focus();
+        }
+
+        function fechar() {
+            editor.style.display = "none";
+            linha.style.display = "flex";
+        }
+
+        async function criar() {
+            const nome = campo.value.trim();
+            if (!nome) {
+                campo.focus();
+                return;
+            }
+
+            botaoOk.disabled = true;
+            try {
+                const resposta = await ModaSysAuth.requisitar("/categorias", {
+                    method: "POST",
+                    body: JSON.stringify({ nome }),
+                });
+                const categoria = await resposta.json();
+                if (!resposta.ok) throw new Error(categoria.erro || "Não foi possível criar a categoria.");
+
+                ModaSysCategorias.adicionarOpcao(select, categoria);
+                select.value = String(categoria.id);
+                select.dispatchEvent(new Event("change", { bubbles: true }));
+                if (aoCriar) aoCriar(categoria);
+                fechar();
+            } catch (erro) {
+                alert(erro.message);
+            } finally {
+                botaoOk.disabled = false;
+            }
+        }
+
+        botaoNovo.addEventListener("click", abrir);
+        botaoCancelar.addEventListener("click", fechar);
+        botaoOk.addEventListener("click", criar);
+        // Enter cria (sem enviar o formulário inteiro); Esc cancela.
+        campo.addEventListener("keydown", (evento) => {
+            if (evento.key === "Enter") {
+                evento.preventDefault();
+                evento.stopPropagation();
+                criar();
+            } else if (evento.key === "Escape") {
+                fechar();
+            }
+        });
+
+        // Quando a página trava o select (ex.: em entradas, produto que já
+        // existe não muda de categoria), o "+" trava junto.
+        const sincronizar = () => {
+            botaoNovo.disabled = select.disabled;
+            if (select.disabled) fechar();
+        };
+        new MutationObserver(sincronizar).observe(select, { attributes: true, attributeFilter: ["disabled"] });
+        sincronizar();
+    },
+
+    // Insere a opção em ordem alfabética, sem duplicar.
+    adicionarOpcao(select, categoria) {
+        const id = String(categoria.id);
+        if ([...select.options].some(o => o.value === id)) return;
+
+        const opcao = new Option(categoria.nome, id);
+        const depois = [...select.options].find(o => o.value && o.text.localeCompare(categoria.nome, "pt-BR") > 0);
+        select.add(opcao, depois || null);
+    },
+};
+
+window.ModaSysCategorias = ModaSysCategorias;
+
 // ---- PWA: botão "Instalar app" e aviso de sem conexão ----
 const ModaSysPwa = {
     eventoInstalacao: null,

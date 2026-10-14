@@ -495,3 +495,17 @@ table tbody tr:hover { background-color: var(--paper); }
     .btn-instalar span { display: none; }
     .btn-instalar { padding: 6px 10px; }
 }
+
+/* ============ Campo com botão de ação ao lado (ex.: categoria + "+") ============ */
+.campo-com-acao { display: flex; gap: 8px; align-items: stretch; }
+.campo-com-acao .form-control { flex: 1; min-width: 0; }
+.btn-acao-campo {
+    flex: 0 0 auto; width: 40px;
+    background: var(--paper); color: var(--ink-soft);
+    border: 1px solid var(--border-color); border-radius: var(--radius-sm);
+    cursor: pointer; transition: var(--transition);
+}
+.btn-acao-campo:hover:not(:disabled) { color: var(--thread); border-color: var(--thread); }
+.btn-acao-campo:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-acao-campo--ok { background: var(--moss); border-color: var(--moss); color: #fff; }
+.btn-acao-campo--ok:hover:not(:disabled) { background: var(--ink); border-color: var(--ink); color: #fff; }

@@ -37,6 +37,7 @@ $rotas->patch('/usuarios/{id}/senha', [\App\Controllers\UsuariosController::clas
 $rotas->patch('/usuarios/{id}/ativo', [\App\Controllers\UsuariosController::class, 'alternarAtivo']);
 
 $rotas->get('/categorias', [\App\Controllers\CategoriasController::class, 'listar']);
+$rotas->post('/categorias', [\App\Controllers\CategoriasController::class, 'criar']);
 
 $rotas->get('/fornecedores', [\App\Controllers\FornecedoresController::class, 'listar']);
 $rotas->post('/fornecedores', [\App\Controllers\FornecedoresController::class, 'criar']);

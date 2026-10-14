@@ -286,6 +286,10 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // Categoria criada pelo "+" entra na lista local, pra o nome dela
+    // aparecer na tabela de itens.
+    ModaSysCategorias.ligar(itemCategoria, (categoria) => categoriasCache.push(categoria));
+
     async function carregarCategorias() {
         categoriasCache = await buscar("categorias");
         categoriasCache.forEach(c => {

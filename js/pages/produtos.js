@@ -143,6 +143,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    ModaSysCategorias.ligar(categoria);
     carregarOpcoes(categoria, "categorias", "nome");
     carregarOpcoes(fornecedor, "fornecedores", "razao_social");
     carregarLista();
