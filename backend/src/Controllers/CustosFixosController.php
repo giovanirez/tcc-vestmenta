@@ -8,17 +8,19 @@ use App\Support\Request;
 use App\Support\Response;
 use App\Support\Validator;
 
+// Despesas da loja: só o administrador vê e edita (o vendedor não tem
+// acesso nem pela tela nem chamando a API direto).
 class CustosFixosController
 {
     public function listar(Request $requisicao): void
     {
-        Auth::exigirLogin($requisicao);
+        Auth::exigirPapel($requisicao, 'admin');
         Response::json((new CustoFixoRepository())->listarTodos());
     }
 
     public function criar(Request $requisicao): void
     {
-        Auth::exigirLogin($requisicao);
+        Auth::exigirPapel($requisicao, 'admin');
 
         $dados = $requisicao->todaEntrada();
         $this->validar($dados);
@@ -28,7 +30,7 @@ class CustosFixosController
 
     public function atualizar(Request $requisicao, string $id): void
     {
-        Auth::exigirLogin($requisicao);
+        Auth::exigirPapel($requisicao, 'admin');
 
         $repositorio = new CustoFixoRepository();
         if (!$repositorio->buscarPorId((int) $id)) {
@@ -43,7 +45,7 @@ class CustosFixosController
 
     public function alternarAtivo(Request $requisicao, string $id): void
     {
-        Auth::exigirLogin($requisicao);
+        Auth::exigirPapel($requisicao, 'admin');
 
         $repositorio = new CustoFixoRepository();
         $custo = $repositorio->buscarPorId((int) $id);

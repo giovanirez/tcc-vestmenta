@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ModaSys — Diagrama Entidade-Relacionamento</title>
+<!-- Versão para imprimir do DER que está no DATABASE.md (mesmo
+     diagrama). Abra no navegador e use Ctrl+P > Salvar como PDF; a
+     página já vem em A3 deitado. Se mudar o banco, atualize os dois. -->
+<style>
+  @page { size: A3 landscape; margin: 10mm; }
+  body { margin: 0; padding: 24px; font-family: "Segoe UI", system-ui, sans-serif; color: #221F1C; background: #fff; }
+  header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid #221F1C; padding-bottom: 8px; margin-bottom: 16px; }
+  h1 { font-family: Georgia, serif; font-size: 22px; margin: 0; }
+  header p { margin: 0; font-size: 12px; color: #726A5F; }
+  .legenda { font-size: 12px; color: #45403A; margin: 0 0 12px; }
+  .legenda code { background: #EDEAE3; padding: 1px 4px; border-radius: 3px; }
+  .mermaid { text-align: center; }
+  .mermaid svg { max-width: 100%; height: auto; }
+  @media print { body { padding: 0; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>ModaSys — Diagrama Entidade-Relacionamento</h1>
+  <p>PostgreSQL (Supabase) · 16 tabelas · 17 chaves estrangeiras · outubro de 2026</p>
+</header>
+<p class="legenda">
+  Cardinalidade (pé de galinha): <code>||</code> exatamente um · <code>|o</code> zero ou um ·
+  <code>|{</code> um ou mais · <code>o{</code> zero ou mais.
+  <code>PK</code> chave primária · <code>FK</code> chave estrangeira · <code>UK</code> valor único.
+  O estoque (<code>produtos.estoque_atual</code>) é atualizado pela trigger de <code>documento_itens</code>.
+</p>
+<pre class="mermaid">
+erDiagram
+    CATEGORIAS |o--o{ PRODUTOS : "classifica"
+    FORNECEDORES |o--o{ PRODUTOS : "fornecedor padrão"
+    FORNECEDORES ||--o{ ENTRADAS : "emite a nota"
+    ENTRADAS ||--|{ ENTRADA_ITENS : "contém"
+    PRODUTOS ||--o{ ENTRADA_ITENS : "é recebido em"
+    CLIENTES ||--o{ CONDICIONAIS : "leva"
+    CONDICIONAIS ||--|{ CONDICIONAL_ITENS : "contém"
+    PRODUTOS ||--o{ CONDICIONAL_ITENS : "sai em"
+    CLIENTES |o--o{ VENDAS : "compra"
+    VENDEDORES |o--o{ VENDAS : "atende"
+    USUARIOS |o--o{ VENDAS : "registra"
+    CONDICIONAIS |o--o{ VENDAS : "vira venda"
+    VENDAS ||--|{ VENDA_ITENS : "contém"
+    PRODUTOS ||--o{ VENDA_ITENS : "é vendido em"
+    VENDAS ||--o{ VENDA_PARCELAS : "parcela (fiado)"
+    DOCUMENTOS ||--|{ DOCUMENTO_ITENS : "contém"
+    PRODUTOS ||--o{ DOCUMENTO_ITENS : "movimenta estoque"
+
+    USUARIOS {
+        bigint id PK
+        varchar nome
+        varchar email UK
+        varchar senha_hash
+        text papel "admin ou vendedor"
+        boolean ativo
+        timestamptz criado_em
+    }
+    VENDEDORES {
+        bigint id PK
+        varchar nome UK "único sem diferenciar maiúsculas"
+        timestamptz criado_em
+    }
+    CATEGORIAS {
+        bigint id PK
+        varchar nome UK
+    }
+    FORNECEDORES {
+        bigint id PK
+        varchar razao_social
+        varchar cnpj UK
+        varchar inscricao_estadual
+        varchar telefone
+        varchar email
+        varchar cep
+        varchar logradouro
+        varchar numero
+        varchar complemento
+        varchar bairro
+        varchar cidade
+        char uf
+        boolean ativo
+        timestamptz criado_em
+    }
+    CLIENTES {
+        bigint id PK
+        varchar nome
+        varchar telefone
+        varchar cpf UK
+        varchar email
+        varchar cep
+        varchar logradouro
+        varchar numero
+        varchar complemento
+        varchar bairro
+        varchar cidade
+        char uf
+        numeric limite_credito "NULL = sem fiado"
+        timestamptz criado_em
+    }
+    PRODUTOS {
+        bigint id PK
+        varchar codigo_interno UK
+        varchar nome
+        varchar descricao
+        bigint categoria_id FK
+        bigint fornecedor_id FK
+        numeric preco_custo
+        numeric preco_venda
+        integer estoque_atual "mantido pela trigger"
+        boolean ativo
+        timestamptz criado_em
+    }
+    ENTRADAS {
+        bigint id PK
+        bigint fornecedor_id FK
+        varchar numero_nf
+        varchar serie
+        char chave_acesso "44 dígitos da NF-e"
+        varchar natureza_operacao
+        date data_emissao
+        date data_entrada
+        smallint modalidade_frete
+        varchar transportadora
+        varchar placa_veiculo
+        numeric valor_produtos
+        numeric valor_frete
+        numeric valor_seguro
+        numeric valor_outras_despesas
+        numeric valor_desconto
+        numeric valor_icms
+        numeric valor_ipi
+        numeric valor_total
+        text informacoes_complementares
+        text status "Pendente ou Concluída"
+        timestamptz criado_em
+    }
+    ENTRADA_ITENS {
+        bigint id PK
+        bigint entrada_id FK
+        bigint produto_id FK
+        integer quantidade
+        numeric custo_unitario "custo desta compra"
+        numeric valor_total
+    }
+    CONDICIONAIS {
+        bigint id PK
+        bigint cliente_id FK
+        date data_saida
+        date data_conclusao
+        text status "Pendente, Aprovado ou Devolvido"
+        timestamptz criado_em
+    }
+    CONDICIONAL_ITENS {
+        bigint id PK
+        bigint condicional_id FK
+        bigint produto_id FK
+        integer quantidade
+    }
+    VENDAS {
+        bigint id PK
+        bigint cliente_id FK
+        bigint condicional_id FK
+        bigint usuario_id FK
+        bigint vendedor_id FK
+        timestamptz data_venda
+        text forma_pagamento "PIX, Cartão, Dinheiro ou Fiado"
+        smallint parcelas_cartao
+        numeric valor_subtotal
+        numeric valor_desconto
+        numeric valor_total
+        text status "Concluída ou Cancelada"
+    }
+    VENDA_ITENS {
+        bigint id PK
+        bigint venda_id FK
+        bigint produto_id FK
+        integer quantidade
+        numeric valor_unitario "preço no momento da venda"
+        numeric valor_desconto
+        numeric valor_total
+    }
+    VENDA_PARCELAS {
+        bigint id PK
+        bigint venda_id FK
+        smallint numero_parcela
+        numeric valor
+        date data_vencimento
+        date data_pagamento
+        text status "Pendente ou Paga"
+    }
+    DOCUMENTOS {
+        bigint id PK
+        text tipo "Entrada ou Saída"
+        text origem "Compra, Venda, Condicional, Ajuste, Perda"
+        bigint referencia_id "id de origem, sem FK"
+        date data
+        varchar observacao
+        timestamptz criado_em
+    }
+    DOCUMENTO_ITENS {
+        bigint id PK
+        bigint documento_id FK
+        bigint produto_id FK
+        integer quantidade "sempre maior que zero"
+    }
+    CUSTOS_FIXOS {
+        bigint id PK
+        varchar nome
+        varchar categoria
+        numeric valor
+        smallint dia_vencimento "1 a 31"
+        boolean ativo
+        varchar observacao
+        timestamptz criado_em
+    }
+</pre>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "neutral", er: { layoutDirection: "TB", fontSize: 13 } });
+</script>
+</body>
+</html>

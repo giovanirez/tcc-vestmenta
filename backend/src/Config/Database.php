@@ -26,8 +26,31 @@ class Database
         }
 
         $dsn = "pgsql:host={$host};port={$porta};dbname={$banco};sslmode=require";
+        $persistente = Env::obter('DB_PERSISTENTE') === '1';
 
-        self::$instancia = new PDO($dsn, $usuario, $senha, [
+        self::$instancia = self::abrir($dsn, $usuario, $senha, $persistente);
+
+        // Uma conexão reaproveitada pode ter caído enquanto estava parada
+        // (o pooler do Supabase ou a rede fecham conexões ociosas), e o
+        // PDO só descobre isso na primeira consulta — que viraria um erro
+        // 500 na requisição de quem estiver usando. Por isso ela é testada
+        // antes (uma ida rápida ao banco, bem mais barata que abrir uma
+        // conexão nova) e, se estiver morta, esta requisição abre uma nova.
+        if ($persistente) {
+            try {
+                self::$instancia->query('SELECT 1');
+            } catch (\PDOException $e) {
+                error_log('Conexão persistente caída, reconectando: ' . $e->getMessage());
+                self::$instancia = self::abrir($dsn, $usuario, $senha, false);
+            }
+        }
+
+        return self::$instancia;
+    }
+
+    private static function abrir(string $dsn, ?string $usuario, ?string $senha, bool $persistente): PDO
+    {
+        return new PDO($dsn, $usuario, $senha, [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             // Por padrão o PDO faz DUAS idas ao banco por consulta (prepara
@@ -44,10 +67,8 @@ class Database
             // 150 threads, poderia abrir conexões demais no Supabase. Se
             // uma requisição morrer no meio de uma transação, o PDO desfaz
             // a transação antes de devolver a conexão pro próximo uso.
-            PDO::ATTR_PERSISTENT => Env::obter('DB_PERSISTENTE') === '1',
+            PDO::ATTR_PERSISTENT => $persistente,
         ]);
-
-        return self::$instancia;
     }
 
     // Roda $operacao dentro de uma transação: ou tudo grava, ou nada
