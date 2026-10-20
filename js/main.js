@@ -411,11 +411,18 @@ document.addEventListener("DOMContentLoaded", () => {
         saudacaoNomeEl.textContent = usuario.nome.split(" ")[0];
     }
 
-    // "Configurações" só faz sentido pra quem administra — o backend já
-    // bloqueia (403), isso aqui só evita mostrar um link que vai dar erro.
-    const itemConfiguracoes = document.getElementById("item-configuracoes");
-    if (usuario && itemConfiguracoes && usuario.papel !== "admin") {
-        itemConfiguracoes.style.display = "none";
+    // Telas só do administrador (Custos Fixos, Relatórios, Configurações).
+    // Quem decide de verdade é o backend (responde 403 pro vendedor); aqui
+    // só não mostra o link e, se o vendedor abrir o endereço direto, leva
+    // pro painel em vez de mostrar uma tela que não vai carregar.
+    const PAGINAS_SO_ADMIN = ["custos-fixos.php", "relatorios.php", "configuracoes.php"];
+    if (usuario && usuario.papel !== "admin") {
+        const paginaAtual = window.location.pathname.split("/").pop();
+        if (PAGINAS_SO_ADMIN.includes(paginaAtual)) {
+            window.location.replace("dashboard.php");
+            return;
+        }
+        document.querySelectorAll("[data-so-admin]").forEach(item => { item.style.display = "none"; });
     }
 
     const botaoSair = document.getElementById("botao-sair");

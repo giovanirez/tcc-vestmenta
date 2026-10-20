@@ -38,9 +38,11 @@ class RelatoriosController
 
     // GET /relatorios?inicio=AAAA-MM-DD&fim=AAAA-MM-DD (fim inclusivo pra
     // quem usa; internamente vira o dia seguinte, exclusivo).
+    // Relatórios (faturamento, ticket médio, ranking de clientes) são só
+    // do administrador. O painel (dashboard, acima) é dos dois perfis.
     public function gerar(Request $requisicao): void
     {
-        Auth::exigirLogin($requisicao);
+        Auth::exigirPapel($requisicao, 'admin');
 
         $inicioDia = $this->data((string) $requisicao->query('inicio', ''));
         $fimDia = $this->data((string) $requisicao->query('fim', ''));

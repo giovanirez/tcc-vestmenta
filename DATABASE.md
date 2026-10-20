@@ -1,293 +1,365 @@
 # Banco de dados do ModaSys
 
-Estrutura relacional para MySQL/MariaDB, pensada para rodar local
-no MySQL do XAMPP enquanto a hospedagem não é contratada.
+Banco relacional **PostgreSQL**, hospedado no **Supabase**. É um banco
+único: só o backend (a API) se conecta a ele; o front-end nunca acessa
+o banco direto, sempre passa pela API.
 
 ## Como usar
 
-```bash
-mysql -u root -p < schema.sql
-mysql -u root -p modasys < seed.sql
-```
+Tudo é rodado no Supabase, em **SQL Editor › New query › colar › Run**:
 
-O `schema.sql` cria o banco `modasys` e as tabelas. O `seed.sql` é
-opcional — só insere os mesmos dados que hoje estão mockados nos
-arrays PHP, para dar pra testar consultas reais antes de trocar o
-front-end de vez.
-
-## Por que essas tabelas
-
-Cada tabela existe porque uma tela do sistema já precisa dela — não
-tem nada especulativo demais aqui, é o banco "seguindo" o que o
-front-end já mostra:
-
-| Tabela | Tela que originou |
+| Arquivo | Quando usar |
 |---|---|
-| `fornecedores` | fornecedores.php |
-| `clientes` | clientes.php |
-| `categorias` | combo "Categoria" em produtos.php |
-| `produtos` | produtos.php |
-| `entradas` + `entrada_itens` | entradas.php (Nota Fiscal de compra) |
-| `condicionais` + `condicional_itens` | condicionais.php |
-| `vendas` + `venda_itens` | vendas.php (PDV) e os KPIs do dashboard |
-| `venda_parcelas` | contas-a-receber.php (vendas "Fiado") |
-| `custos_fixos` | custos-fixos.php |
-| `documentos` + `documento_itens` | inventario.php, e por baixo dos panos de entradas/vendas/condicionais |
-| `usuarios` | login.php (login ainda não está ligado ao banco) |
+| `schema-supabase.sql` | Criar o banco do zero (tabelas, chaves, checagens, trigger e o papel `backend_role` que a API usa) |
+| `migracao-001-vendedores.sql` | Só em um banco que já existia antes da tabela `vendedores` (pode rodar de novo sem problema) |
+| `drop-schema-supabase.sql` | Apagar tudo para recomeçar (**apaga os dados**) |
 
-## Decisões de modelagem (para explicar na banca)
+`schema.sql` e `seed.sql` são a primeira versão do banco, em MySQL, de
+quando o sistema rodava só no XAMPP com dados de exemplo. Ficam como
+histórico do projeto e **não refletem o banco atual**.
 
-**Categoria virou tabela, não texto solto.** Antes, `produtos.php`
-guardava "Vestidos", "Calças" etc. como texto livre em cada produto.
-Isso deixa fácil digitar errado ("Vestido" vs "Vestidos") e difícil
-renomear uma categoria depois. Uma tabela `categorias` com
-`produtos.categoria_id` como chave estrangeira resolve os dois
-problemas — é o exemplo mais simples de normalização para mostrar.
+## Diagrama Entidade-Relacionamento (DER)
 
-**Preço de venda é fotografado na venda, não é sempre o preço atual.**
-`venda_itens.valor_unitario` guarda o preço no momento daquela venda.
-Se o preço do produto mudar amanhã, o histórico de vendas antigas não
-pode mudar junto — por isso não é só uma referência a
-`produtos.preco_venda`, é uma cópia do valor daquele instante.
-
-**Estoque é um saldo em cache, atualizado por uma trigger — não por
-código PHP espalhado.** `produtos.estoque_atual` guarda o saldo
-atual (recalcular somando todo o histórico a cada tela ficaria lento
-com o tempo). A parte importante é *como* esse saldo é mantido
-atualizado: existe uma tabela `documentos` (cabeçalho: é Entrada ou
-Saída, e de onde veio — Compra, Venda, Condicional, Ajuste de
-Inventário, Perda/Avaria) e `documento_itens` (produto + quantidade
-movimentada). Uma trigger `AFTER INSERT ON documento_itens` soma ou
-subtrai `produtos.estoque_atual` automaticamente.
-
-Por que um "ledger" (ideia emprestada de livro-razão contábil) em vez
-de cada tela mexer direto na coluna: se amanhã existir uma quinta
-forma de tirar peça do estoque que ninguém previu hoje, ela só
-precisa inserir em `documentos` — não precisa lembrar de replicar uma
-regra de "subtrair estoque" em mais um lugar do código. E pra auditar
-todo movimento que uma peça já sofreu, basta consultar essa tabela
-única, sem cruzar `entrada_itens` + `venda_itens` + `condicional_itens`.
-
-Essas outras tabelas (`entrada_itens`, `venda_itens`,
-`condicional_itens`) continuam existindo — elas guardam o dado de
-*negócio* de cada operação (preço, custo, desconto, forma de
-pagamento), que não faz sentido morar em `documentos`. As duas
-coisas coexistem: uma entrada processada grava uma linha em
-`entrada_itens` (pra saber quanto custou) **e** uma em
-`documento_itens` (pra afetar o estoque). É por isso que o
-`seed.sql` insere as duas coisas separadamente — dá pra ver isso
-acontecendo nos dados de exemplo.
-
-`referencia_id` em `documentos` aponta pro id de origem (a entrada,
-venda ou condicional), mas não é uma foreign key de verdade: a
-tabela de destino muda dependendo da coluna `origem`, e o MySQL não
-tem FK polimórfica. Fica `NULL` em ajustes manuais de inventário ou
-perdas, que não vêm de nenhuma tabela de negócio.
-
-**Desconto é salvo em reais, o percentual é só uma calculadora na
-tela.** No PDV dá pra digitar "% Desc." em cada item e também um
-desconto geral da venda — mas o banco só guarda o valor em reais
-resultante (`venda_itens.valor_desconto` e `vendas.valor_desconto`).
-É o mesmo raciocínio do "% Lucro" em entradas.php: o percentual
-ajuda a preencher rápido, o que importa pra relatório e conferência
-de caixa é o valor final, não a fórmula que chegou nele.
-
-**`parcelas_cartao` é só informativo.** Guarda em quantas vezes o
-cliente parcelou no cartão, mas isso não afeta `valor_total` nem cria
-linhas em nenhuma tabela — quem financia o parcelamento é a operadora
-do cartão, a loja recebe o valor cheio (menos a taxa, que este sistema
-não calcula). É bem diferente de `venda_parcelas`: aquela é dívida
-real do cliente com a loja (fiado); esta é só um registro de como o
-pagamento foi feito.
-
-**Fiado é parcela, não é só uma forma de pagamento a mais.** Uma
-venda "Fiado" gera de 1 a N linhas em `venda_parcelas`, cada uma com
-seu próprio vencimento e status (`Pendente`/`Paga`). Isso existe
-porque uma venda fiada não é "concluída" no ato — ela só termina de
-verdade quando a última parcela é paga. Por isso não basta usar as
-mesmas colunas de uma venda à vista.
-
-**Atraso é calculado, não é um status gravado.** `venda_parcelas`
-não tem um status `Atrasada` — uma parcela é `Pendente` até ser
-paga, e a tela de Contas a Receber decide se mostra "atrasada"
-comparando `data_vencimento` com a data de hoje na hora da consulta.
-Gravar isso numa coluna exigiria um processo rodando todo dia só pra
-atualizar o status; calcular no `SELECT` nunca fica desatualizado e
-é mais simples de manter.
-
-**`limite_credito` em `clientes` decide quem pode comprar fiado.**
-Fica `NULL` por padrão (sem fiado liberado). Quando preenchido, é
-o teto de dívida em aberto que aquele cliente pode ter ao mesmo
-tempo — a validação ("essa venda estouraria o limite?") acontece na
-aplicação na hora de fechar a venda, comparando com a soma das
-parcelas `Pendente` daquele cliente.
-
-**`cliente_id` e `condicional_id` em `vendas` aceitam NULL.**
-`cliente_id` nulo representa o "Cliente Balcão" do PDV — nem toda
-venda tem um cliente cadastrado. A exceção é a venda "Fiado": nesse
-caso `cliente_id` nulo não faz sentido (não tem pra quem cobrar
-depois), então a aplicação exige um cliente real antes de liberar
-essa forma de pagamento no PDV. `condicional_id` só é preenchido
-quando a venda nasce de um "Finalizar Venda" em condicionais.php;
-a maioria das vendas não vem de uma condicional, então fica nulo.
-
-**Os campos de Nota Fiscal em `entradas` batem com o formulário
-atual.** Número, série, chave de acesso, transporte, totais (frete,
-seguro, ICMS, IPI...) — são exatamente as seções que já existem em
-"Nova Entrada de Produtos". Quando o botão de importar XML for
-construído, o mapeamento é direto: cada tag do XML da NF-e cai numa
-coluna que já existe.
-
-**Endereço de `fornecedores` e `clientes` é estruturado, não um
-campo de texto único.** CEP, logradouro, número, complemento, bairro,
-cidade e UF ficam em colunas separadas porque o front-end preenche
-boa parte disso automaticamente: o CEP consulta a API ViaCEP e
-preenche logradouro/bairro/cidade/UF, e no fornecedor o CNPJ consulta
-a BrasilAPI e preenche razão social + endereço completo de uma vez.
-Guardar em colunas separadas é o que permite, por exemplo, filtrar
-fornecedores por UF num relatório futuro — um campo de texto único
-não permitiria isso sem parsing.
-
-## Diagrama
+Gerado a partir do banco em produção (outubro de 2026). Notação "pé de
+galinha": `||` = exatamente um, `|o` = zero ou um, `|{` = um ou mais,
+`o{` = zero ou mais. `PK` = chave primária, `FK` = chave estrangeira,
+`UK` = valor único. O GitHub e o VS Code desenham este diagrama; para
+imprimir, abra `docs/der.html` no navegador.
 
 ```mermaid
 erDiagram
-    CATEGORIAS ||--o{ PRODUTOS : classifica
-    FORNECEDORES ||--o{ PRODUTOS : "fornece (padrão)"
-    FORNECEDORES ||--o{ ENTRADAS : emite
-    ENTRADAS ||--|{ ENTRADA_ITENS : contém
-    PRODUTOS ||--o{ ENTRADA_ITENS : recebido
-    CLIENTES ||--o{ CONDICIONAIS : retira
-    CONDICIONAIS ||--|{ CONDICIONAL_ITENS : contém
-    PRODUTOS ||--o{ CONDICIONAL_ITENS : emprestado
-    CLIENTES ||--o{ VENDAS : compra
-    CONDICIONAIS ||--o{ VENDAS : "vira (opcional)"
-    USUARIOS ||--o{ VENDAS : registra
-    VENDAS ||--|{ VENDA_ITENS : contém
-    PRODUTOS ||--o{ VENDA_ITENS : vendido
-    VENDAS ||--o{ VENDA_PARCELAS : "parcela (se Fiado)"
-    DOCUMENTOS ||--|{ DOCUMENTO_ITENS : contém
-    PRODUTOS ||--o{ DOCUMENTO_ITENS : "afeta estoque de"
+    CATEGORIAS |o--o{ PRODUTOS : "classifica"
+    FORNECEDORES |o--o{ PRODUTOS : "fornecedor padrão"
+    FORNECEDORES ||--o{ ENTRADAS : "emite a nota"
+    ENTRADAS ||--|{ ENTRADA_ITENS : "contém"
+    PRODUTOS ||--o{ ENTRADA_ITENS : "é recebido em"
+    CLIENTES ||--o{ CONDICIONAIS : "leva"
+    CONDICIONAIS ||--|{ CONDICIONAL_ITENS : "contém"
+    PRODUTOS ||--o{ CONDICIONAL_ITENS : "sai em"
+    CLIENTES |o--o{ VENDAS : "compra"
+    VENDEDORES |o--o{ VENDAS : "atende"
+    USUARIOS |o--o{ VENDAS : "registra"
+    CONDICIONAIS |o--o{ VENDAS : "vira venda"
+    VENDAS ||--|{ VENDA_ITENS : "contém"
+    PRODUTOS ||--o{ VENDA_ITENS : "é vendido em"
+    VENDAS ||--o{ VENDA_PARCELAS : "parcela (fiado)"
+    DOCUMENTOS ||--|{ DOCUMENTO_ITENS : "contém"
+    PRODUTOS ||--o{ DOCUMENTO_ITENS : "movimenta estoque"
 
-    CATEGORIAS {
-        int id PK
+    USUARIOS {
+        bigint id PK
         varchar nome
+        varchar email UK
+        varchar senha_hash
+        text papel "admin ou vendedor"
+        boolean ativo
+        timestamptz criado_em
+    }
+    VENDEDORES {
+        bigint id PK
+        varchar nome UK "único sem diferenciar maiúsculas"
+        timestamptz criado_em
+    }
+    CATEGORIAS {
+        bigint id PK
+        varchar nome UK
     }
     FORNECEDORES {
-        int id PK
+        bigint id PK
         varchar razao_social
-        varchar cnpj
+        varchar cnpj UK
+        varchar inscricao_estadual
+        varchar telefone
+        varchar email
         varchar cep
+        varchar logradouro
+        varchar numero
+        varchar complemento
+        varchar bairro
         varchar cidade
         char uf
-    }
-    PRODUTOS {
-        int id PK
-        varchar codigo_interno
-        varchar nome
-        int categoria_id FK
-        int fornecedor_id FK
-        decimal preco_custo
-        decimal preco_venda
-        int estoque_atual
+        boolean ativo
+        timestamptz criado_em
     }
     CLIENTES {
-        int id PK
+        bigint id PK
         varchar nome
         varchar telefone
-        varchar cpf
+        varchar cpf UK
+        varchar email
         varchar cep
+        varchar logradouro
+        varchar numero
+        varchar complemento
+        varchar bairro
         varchar cidade
-        decimal limite_credito
+        char uf
+        numeric limite_credito "NULL = sem fiado"
+        timestamptz criado_em
+    }
+    PRODUTOS {
+        bigint id PK
+        varchar codigo_interno UK
+        varchar nome
+        varchar descricao
+        bigint categoria_id FK
+        bigint fornecedor_id FK
+        numeric preco_custo
+        numeric preco_venda
+        integer estoque_atual "mantido pela trigger"
+        boolean ativo
+        timestamptz criado_em
     }
     ENTRADAS {
-        int id PK
-        int fornecedor_id FK
+        bigint id PK
+        bigint fornecedor_id FK
         varchar numero_nf
-        char chave_acesso
+        varchar serie
+        char chave_acesso "44 dígitos da NF-e"
+        varchar natureza_operacao
+        date data_emissao
         date data_entrada
-        decimal valor_total
-        enum status
+        smallint modalidade_frete
+        varchar transportadora
+        varchar placa_veiculo
+        numeric valor_produtos
+        numeric valor_frete
+        numeric valor_seguro
+        numeric valor_outras_despesas
+        numeric valor_desconto
+        numeric valor_icms
+        numeric valor_ipi
+        numeric valor_total
+        text informacoes_complementares
+        text status "Pendente ou Concluída"
+        timestamptz criado_em
     }
     ENTRADA_ITENS {
-        int id PK
-        int entrada_id FK
-        int produto_id FK
-        int quantidade
-        decimal custo_unitario
+        bigint id PK
+        bigint entrada_id FK
+        bigint produto_id FK
+        integer quantidade
+        numeric custo_unitario "custo desta compra"
+        numeric valor_total
     }
     CONDICIONAIS {
-        int id PK
-        int cliente_id FK
+        bigint id PK
+        bigint cliente_id FK
         date data_saida
         date data_conclusao
-        enum status
+        text status "Pendente, Aprovado ou Devolvido"
+        timestamptz criado_em
     }
     CONDICIONAL_ITENS {
-        int id PK
-        int condicional_id FK
-        int produto_id FK
-        int quantidade
-    }
-    USUARIOS {
-        int id PK
-        varchar nome
-        varchar email
-        enum papel
+        bigint id PK
+        bigint condicional_id FK
+        bigint produto_id FK
+        integer quantidade
     }
     VENDAS {
-        int id PK
-        int cliente_id FK
-        int condicional_id FK
-        int usuario_id FK
-        datetime data_venda
-        enum forma_pagamento
-        decimal valor_total
+        bigint id PK
+        bigint cliente_id FK
+        bigint condicional_id FK
+        bigint usuario_id FK
+        bigint vendedor_id FK
+        timestamptz data_venda
+        text forma_pagamento "PIX, Cartão, Dinheiro ou Fiado"
+        smallint parcelas_cartao
+        numeric valor_subtotal
+        numeric valor_desconto
+        numeric valor_total
+        text status "Concluída ou Cancelada"
     }
     VENDA_ITENS {
-        int id PK
-        int venda_id FK
-        int produto_id FK
-        int quantidade
-        decimal valor_unitario
+        bigint id PK
+        bigint venda_id FK
+        bigint produto_id FK
+        integer quantidade
+        numeric valor_unitario "preço no momento da venda"
+        numeric valor_desconto
+        numeric valor_total
     }
     VENDA_PARCELAS {
-        int id PK
-        int venda_id FK
-        tinyint numero_parcela
-        decimal valor
+        bigint id PK
+        bigint venda_id FK
+        smallint numero_parcela
+        numeric valor
         date data_vencimento
         date data_pagamento
-        enum status
+        text status "Pendente ou Paga"
     }
     DOCUMENTOS {
-        int id PK
-        enum tipo "Entrada ou Saída"
-        enum origem "Compra, Venda, Condicional, Ajuste, Perda"
-        int referencia_id "sem FK real, ver texto acima"
+        bigint id PK
+        text tipo "Entrada ou Saída"
+        text origem "Compra, Venda, Condicional, Ajuste, Perda"
+        bigint referencia_id "id de origem, sem FK"
         date data
+        varchar observacao
+        timestamptz criado_em
     }
     DOCUMENTO_ITENS {
-        int id PK
-        int documento_id FK
-        int produto_id FK
-        int quantidade "sempre positivo"
+        bigint id PK
+        bigint documento_id FK
+        bigint produto_id FK
+        integer quantidade "sempre maior que zero"
     }
     CUSTOS_FIXOS {
-        int id PK
+        bigint id PK
         varchar nome
         varchar categoria
-        decimal valor
-        tinyint dia_vencimento
-        tinyint ativo
+        numeric valor
+        smallint dia_vencimento "1 a 31"
+        boolean ativo
+        varchar observacao
+        timestamptz criado_em
     }
 ```
 
-## Próximos passos naturais
+`CUSTOS_FIXOS` não se relaciona com as outras tabelas: é o cadastro das
+despesas mensais da loja, usado no total do mês e no relatório.
 
-- Trocar os arrays `$produtos`, `$clientes` etc. nos `.php` por
-  consultas (`SELECT`) neste banco, uma tela de cada vez.
-- Criar `config/database.php` com a conexão PDO, reaproveitada por
-  todas as páginas.
-- Só depois disso, ligar o `login.php` de verdade à tabela `usuarios`
-  (hoje ele só existe visualmente, sem sessão nem senha checada).
+## Por que essas tabelas
+
+Cada tabela existe porque uma tela do sistema precisa dela:
+
+| Tabela | Tela |
+|---|---|
+| `usuarios` | Login e Configurações (gestão de usuários, só admin) |
+| `vendedores` | Campo "Vendedor" do PDV |
+| `fornecedores` | Fornecedores |
+| `clientes` | Clientes |
+| `categorias` | Campo "Categoria" de Produtos e Entradas |
+| `produtos` | Produtos |
+| `entradas` + `entrada_itens` | Entradas (nota fiscal de compra ou entrada manual) |
+| `condicionais` + `condicional_itens` | Condicionais |
+| `vendas` + `venda_itens` | Vendas (PDV), recibo, painel e relatórios |
+| `venda_parcelas` | Contas a Receber (vendas no fiado) |
+| `custos_fixos` | Custos Fixos |
+| `documentos` + `documento_itens` | Inventário, e por baixo dos panos de entradas, vendas e condicionais |
+
+## Integridade dos dados
+
+O banco não depende só da aplicação para manter os dados corretos:
+
+- **17 chaves estrangeiras.** O que acontece ao apagar o registro
+  referenciado foi escolhido caso a caso:
+  - **CASCADE** nas tabelas de itens (`entrada_itens`, `venda_itens`,
+    `condicional_itens`, `venda_parcelas`, `documento_itens`): o item não
+    existe sem o seu cabeçalho.
+  - **SET NULL** nas referências opcionais (categoria e fornecedor do
+    produto; cliente, vendedor, usuário e condicional da venda): o
+    histórico da venda fica, só perde a ligação.
+  - **Bloqueio** (padrão) quando apagar quebraria o histórico: não dá
+    para apagar um produto que já foi vendido, comprado ou movimentado.
+    Por isso produtos, fornecedores, usuários e custos fixos são
+    **desativados** (`ativo = false`) em vez de apagados.
+- **Valores únicos:** CNPJ do fornecedor, CPF do cliente, código do
+  produto, e-mail do usuário, nome da categoria e nome do vendedor (este
+  sem diferenciar maiúsculas, por um índice em `lower(nome)`).
+- **10 checagens (`CHECK`):** listas fechadas de status, papel, forma de
+  pagamento, tipo e origem do documento; dia de vencimento entre 1 e 31;
+  quantidade movimentada sempre maior que zero.
+- **Transações na aplicação:** toda operação que grava em várias tabelas
+  (uma venda grava a venda, os itens, as parcelas e o documento de
+  estoque) roda numa transação: ou grava tudo, ou nada.
+
+## Decisões de modelagem (para explicar na banca)
+
+**Categoria e vendedor viraram tabelas, não texto solto.** Guardar
+"Vestidos" como texto em cada produto deixa fácil digitar errado
+("Vestido" vs "Vestidos") e difícil renomear depois. Uma tabela
+`categorias` com `produtos.categoria_id` como chave estrangeira resolve
+os dois problemas. O mesmo vale para `vendedores`: "Ana" e "ana " não
+podem virar duas pessoas no relatório; por isso o nome é único sem
+diferenciar maiúsculas. Na tela, o campo lista só as categorias (ou
+vendedores) já usados, e um botão "+" cadastra um novo na hora.
+
+**Vendedor é diferente do usuário logado.** `vendas.usuario_id` é o
+login usado no sistema; `vendas.vendedor_id` é quem atendeu o cliente.
+Várias vendedoras podem usar o mesmo login do caixa, então as duas
+informações precisam ser separadas.
+
+**Preço de venda é fotografado na venda.** `venda_itens.valor_unitario`
+guarda o preço no momento daquela venda. Se o preço do produto mudar
+amanhã, o histórico das vendas antigas não pode mudar junto, por isso é
+uma cópia do valor daquele instante, e não uma referência a
+`produtos.preco_venda`.
+
+**Custo é de cada compra.** `entrada_itens.custo_unitario` guarda quanto
+custou cada peça naquela entrada. Uma compra nova não muda o custo das
+peças que já estavam no estoque, e a próxima entrada do mesmo produto
+sugere o custo da última compra.
+
+**Estoque é um saldo atualizado por uma trigger, não por código
+espalhado.** `produtos.estoque_atual` guarda o saldo atual (recalcular
+somando todo o histórico a cada tela ficaria lento com o tempo). Quem
+mantém esse saldo é o banco: a tabela `documentos` (cabeçalho: Entrada
+ou Saída, e a origem — Compra, Venda, Condicional, Ajuste de Inventário,
+Perda/Avaria) e `documento_itens` (produto + quantidade). A trigger
+`trg_documento_itens_atualiza_estoque` (`AFTER INSERT ON
+documento_itens`) soma ou subtrai `produtos.estoque_atual`
+automaticamente.
+
+Por que um "livro-razão" (o kardex) em vez de cada tela mexer direto na
+coluna: se surgir uma nova forma de tirar peça do estoque, ela só
+precisa gravar um documento, sem replicar a regra de "subtrair estoque"
+em mais um lugar do código. E para auditar todo movimento de uma peça,
+basta consultar uma tabela, sem cruzar entradas, vendas e condicionais.
+
+As tabelas de negócio (`entrada_itens`, `venda_itens`,
+`condicional_itens`) continuam existindo: guardam preço, custo e
+desconto de cada operação, que não cabem em `documentos`. As duas
+coisas convivem: uma entrada grava em `entrada_itens` (quanto custou)
+**e** em `documento_itens` (para mexer no estoque). Cancelar uma venda
+ou devolver uma condicional gera um documento de Entrada, que devolve
+as peças.
+
+`referencia_id` em `documentos` aponta para a entrada, venda ou
+condicional de origem, mas não é uma chave estrangeira: a tabela de
+destino muda conforme a coluna `origem`, e SQL relacional não tem chave
+estrangeira "polimórfica". Fica `NULL` em ajustes de inventário e
+perdas, que não vêm de outra tabela.
+
+**Desconto é salvo em reais; o percentual é só uma calculadora na
+tela.** No PDV dá para digitar "% Desc." por item e um desconto geral,
+mas o banco guarda o valor em reais resultante
+(`venda_itens.valor_desconto` e `vendas.valor_desconto`). Para
+relatório e conferência de caixa, o que importa é o valor final.
+
+**`parcelas_cartao` é só informativo.** Guarda em quantas vezes o
+cliente parcelou no cartão, mas não cria dívida: quem financia é a
+operadora. É diferente de `venda_parcelas`, que é dívida real do
+cliente com a loja (fiado).
+
+**Fiado é parcela, não só uma forma de pagamento.** Uma venda no fiado
+gera de 1 a N linhas em `venda_parcelas`, cada uma com vencimento e
+status próprios. Os centavos que sobram da divisão vão para a última
+parcela, para a soma bater exatamente com o total.
+
+**Atraso é calculado, não gravado.** Uma parcela é `Pendente` até ser
+paga; a tela decide se mostra "Atrasada" comparando o vencimento com a
+data de hoje (no fuso de Brasília) na hora da consulta. Gravar isso
+numa coluna exigiria um processo rodando todo dia só para atualizar o
+status.
+
+**`limite_credito` decide quem pode comprar no fiado.** Fica `NULL` por
+padrão (sem fiado). Quando preenchido, é o teto de dívida em aberto do
+cliente: ao fechar a venda, a aplicação soma as parcelas pendentes e
+recusa a venda se o limite estourar.
+
+**Toda venda nova tem cliente.** A aplicação exige o cliente em toda
+venda. `vendas.cliente_id` ainda aceita `NULL` no banco porque as
+primeiras vendas foram feitas como "Cliente Balcão" e o histórico delas
+precisa continuar existindo. `condicional_id` só é preenchido quando a
+venda nasce de uma condicional.
+
+**Os campos de nota fiscal em `entradas` batem com a NF-e.** Número,
+série, chave de acesso, transporte e totais (frete, seguro, ICMS,
+IPI...) seguem as seções da nota. Uma futura importação do XML da NF-e
+teria um campo pronto para cada informação.
+
+**Endereço estruturado, não um texto único.** CEP, logradouro, número,
+complemento, bairro, cidade e UF ficam em colunas separadas porque a
+tela preenche boa parte sozinha: o CEP consulta a API ViaCEP, e no
+fornecedor o CNPJ consulta a BrasilAPI. Colunas separadas também
+permitem filtrar por cidade ou UF num relatório.
